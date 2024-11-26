@@ -1,101 +1,126 @@
-import Image from "next/image";
+'use client';
+
+import { useState } from 'react';
+import { Cog6ToothIcon, SparklesIcon } from '@heroicons/react/24/solid';
+import { Toaster, toast } from 'react-hot-toast';
+import PromptForm from './components/PromptForm';
+import Settings from './components/Settings';
+import ThemeToggle from './components/ThemeToggle';
+import { optimizePrompt } from './utils/api';
 
 export default function Home() {
-  return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-semibold">
-              src/app/page.js
-            </code>
-            .
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
+  const [isLoading, setIsLoading] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
+  const [optimizedPrompt, setOptimizedPrompt] = useState('');
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:min-w-44"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+  const handleOptimize = async (prompt, model) => {
+    setIsLoading(true);
+    try {
+      const result = await optimizePrompt(prompt, model);
+      setOptimizedPrompt(result);
+    } catch (error) {
+      toast.error(error.message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return (
+    <div className="relative min-h-screen overflow-hidden bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-sky-50 via-background to-background dark:from-sky-900 px-4 pb-8 pt-16 sm:px-6 lg:px-8">
+      <div className="absolute inset-0 bg-grid-slate-100 [mask-image:linear-gradient(0deg,white,rgba(255,255,255,0.6))] dark:bg-grid-slate-700/25 dark:[mask-image:linear-gradient(0deg,rgba(255,255,255,0.1),rgba(255,255,255,0.5))]" />
+      <Toaster position="top-center" />
+      
+      <div className="fixed right-4 top-4 z-50 flex items-center gap-2 sm:right-6 sm:top-6">
+        <ThemeToggle />
+        <button
+          onClick={() => setShowSettings(true)}
+          className="glass-effect rounded-full p-3 shadow-lg transition-all duration-300 hover:scale-110 hover:shadow-xl"
+          title="API Settings"
+        >
+          <Cog6ToothIcon className="h-6 w-6 text-muted-foreground" />
+        </button>
+      </div>
+
+      <div className="relative mx-auto max-w-5xl">
+        <div className="mb-12 text-center">
+          <div className="mb-4 flex items-center justify-center space-x-2">
+            <SparklesIcon className="h-8 w-8 animate-pulse text-primary sm:h-10 sm:w-10" />
+            <h1 className="animate-gradient bg-gradient-to-r from-foreground via-primary to-foreground bg-clip-text bg-[length:200%_auto] text-4xl font-bold tracking-tight text-transparent sm:text-5xl md:text-6xl">
+              Prompt Optimizer
+            </h1>
+          </div>
+          <p className="mx-auto max-w-2xl text-lg text-muted-foreground sm:text-xl">
+            Transform your natural language prompts into optimized, machine-readable instructions for better AI responses
+          </p>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+
+        <div className="mb-8 overflow-hidden rounded-2xl bg-card/80 p-6 backdrop-blur-sm transition-all duration-300 hover:bg-card/90 hover:shadow-lg sm:p-8">
+          <div className="mb-8">
+            <h2 className="mb-4 text-xl font-semibold text-card-foreground">How it works</h2>
+            <div className="grid gap-6 sm:grid-cols-3">
+              <div className="group rounded-xl bg-secondary p-4 transition-all duration-300 hover:scale-105 hover:shadow-lg">
+                <div className="mb-2 text-lg font-medium text-secondary-foreground">1. Enter Your Prompt</div>
+                <p className="text-secondary-foreground/80">
+                  Write what you want the AI to do in your own words - no special formatting needed
+                </p>
+              </div>
+              <div className="group rounded-xl bg-secondary p-4 transition-all duration-300 hover:scale-105 hover:shadow-lg">
+                <div className="mb-2 text-lg font-medium text-secondary-foreground">2. Choose Model</div>
+                <p className="text-secondary-foreground/80">
+                  Select between GPT-4o or Claude 3.5 Sonnet to optimize your prompt specifically for that model
+                </p>
+              </div>
+              <div className="group rounded-xl bg-secondary p-4 transition-all duration-300 hover:scale-105 hover:shadow-lg">
+                <div className="mb-2 text-lg font-medium text-secondary-foreground">3. Get Results</div>
+                <p className="text-secondary-foreground/80">
+                  Receive an optimized version that helps the AI better understand your requirements
+                </p>
+              </div>
+            </div>
+          </div>
+          
+          <PromptForm onSubmit={handleOptimize} isLoading={isLoading} />
+        </div>
+
+        {optimizedPrompt && (
+          <div className="overflow-hidden rounded-2xl bg-card/80 p-6 backdrop-blur-sm transition-all duration-300 hover:bg-card/90 hover:shadow-lg sm:p-8">
+            <div className="mb-4 flex items-center justify-between">
+              <h2 className="text-xl font-semibold text-card-foreground">Optimized Prompt</h2>
+              <button
+                onClick={() => {
+                  navigator.clipboard.writeText(optimizedPrompt);
+                  toast.success('Copied to clipboard!');
+                }}
+                className="flex items-center space-x-1 rounded-lg bg-primary/10 px-4 py-2 text-sm font-medium text-primary transition-all duration-300 hover:scale-105 hover:bg-primary/20"
+              >
+                <span>Copy</span>
+              </button>
+            </div>
+            <div className="rounded-lg bg-muted p-4 font-mono text-sm transition-all duration-300 hover:bg-muted/70">
+              <pre className="whitespace-pre-wrap text-muted-foreground">{optimizedPrompt}</pre>
+            </div>
+            <div className="mt-4">
+              <p className="text-sm text-muted-foreground">
+                This optimized version is structured to provide clearer instructions and better context for the AI model.
+                Copy and use it in your AI interactions for improved results.
+              </p>
+            </div>
+          </div>
+        )}
+      </div>
+
+      <Settings isOpen={showSettings} onClose={() => setShowSettings(false)} />
+
+      <style jsx global>{`
+        @keyframes gradient {
+          0% { background-position: 0% 50%; }
+          50% { background-position: 100% 50%; }
+          100% { background-position: 0% 50%; }
+        }
+        .animate-gradient {
+          animation: gradient 6s linear infinite;
+        }
+      `}</style>
     </div>
   );
 }
