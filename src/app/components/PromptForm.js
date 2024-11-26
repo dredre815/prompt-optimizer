@@ -61,7 +61,7 @@ export default function PromptForm({ onSubmit, isLoading }) {
             <CommandLineIcon className="pointer-events-none absolute left-3 top-3 h-5 w-5 text-muted-foreground transition-colors duration-300 group-hover:text-primary/70" />
           </div>
           <p className="mt-2 text-sm text-muted-foreground transition-colors duration-300 group-hover:text-foreground/70">
-            Describe what you want the AI to do in natural language. Be as specific or general as you like - we'll help optimize it.
+            Describe what you want the AI to do in natural language. Be as specific or general as you like - we&apos;ll help optimize it.
           </p>
         </div>
       </div>
