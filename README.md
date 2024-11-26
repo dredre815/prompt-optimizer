@@ -22,24 +22,24 @@ A modern web application that helps optimize your prompts for Large Language Mod
 ### Installation
 
 1. Clone the repository:
-\`\`\`bash
+```bash
 git clone https://github.com/yourusername/prompt-optimizer.git
 cd prompt-optimizer
-\`\`\`
+```
 
 2. Install dependencies:
-\`\`\`bash
+```bash
 npm install
 # or
 yarn install
-\`\`\`
+```
 
 3. Run the development server:
-\`\`\`bash
+```bash
 npm run dev
 # or
 yarn dev
-\`\`\`
+```
 
 4. Open [http://localhost:3000](http://localhost:3000) in your browser.
 
@@ -57,6 +57,14 @@ yarn dev
 - [Tailwind CSS](https://tailwindcss.com/) - CSS Framework
 - [OpenAI API](https://openai.com/api/) - GPT-4o Integration
 - [Anthropic API](https://anthropic.com/) - Claude 3.5 Integration
+
+## Author
+
+**Zijun (Marshall) Zhang**
+- Email: [zijuzhang1@student.unimelb.edu.au](mailto:zijuzhang1@student.unimelb.edu.au)
+- GitHub: [@dredre815](https://github.com/dredre815)
+- Twitter: [@Romanticism_02](https://twitter.com/Romanticism_02)
+- LinkedIn: [zijunzhang2002](https://www.linkedin.com/in/zijunzhang2002/)
 
 ## Contributing
 
