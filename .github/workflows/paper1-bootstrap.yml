@@ -1,14 +1,14 @@
 name: Paper1 temporary real-model bootstrap
 
 on:
-  issues:
-    types: [opened]
+  pull_request_target:
+    branches: [main]
+    types: [synchronize, reopened]
   workflow_dispatch:
 
 permissions:
   contents: write
   actions: read
-  issues: write
 
 concurrency:
   group: paper1-real-gpt54mini-bootstrap
@@ -16,7 +16,7 @@ concurrency:
 
 jobs:
   experiment:
-    if: ${{ github.event_name == 'workflow_dispatch' || github.event.issue.title == 'paper1-bootstrap-real-gpt54mini-20260731' }}
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.pull_request.head.ref == 'paper1-gpt54mini-exp-20260731' }}
     runs-on: ubuntu-latest
     timeout-minutes: 180
     env:
