@@ -20,7 +20,7 @@ jobs:
       issues: write
       pull-requests: read
     env:
-      PAPER1_ISSUE_NUMBER: "4"
+      PAPER1_ISSUE_NUMBER: "6"
       PAPER1_CASE_LIMIT: "6"
       PAPER1_REPLICATES: "1"
       PAPER1_RESULT_BRANCH: "paper1-real-gpt54mini-results-20260731"
@@ -30,4 +30,6 @@ jobs:
 
       - name: Run credential-isolated Paper1 experiment
         shell: bash
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: bash paper1_runtime/bootstrap_copilot.sh
