@@ -30,4 +30,6 @@ jobs:
 
       - name: Run credential-isolated Paper1 experiment
         shell: bash
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: bash paper1_runtime/bootstrap_copilot.sh
