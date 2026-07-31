@@ -1,4 +1,4 @@
-name: Deploy to GitHub Pages
+name: Paper1 temporary real-model experiment
 
 on:
   push:
@@ -7,53 +7,124 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
-  pages: write
-  id-token: write
+  contents: write
+  actions: read
 
 concurrency:
-  group: "pages"
+  group: paper1-real-gpt54mini-existing-workflow
   cancel-in-progress: false
 
 jobs:
-  build:
+  experiment:
     runs-on: ubuntu-latest
+    timeout-minutes: 180
+    env:
+      EXPERIMENT_BRANCH: paper1-gpt54mini-exp-20260731
     steps:
-      - name: Checkout
+      - name: Checkout isolated experiment branch
         uses: actions/checkout@v4
-
-      - name: Setup Node
-        uses: actions/setup-node@v4
         with:
-          node-version: "18"
-          cache: npm
+          ref: paper1-gpt54mini-exp-20260731
+          fetch-depth: 0
 
-      - name: Install dependencies
-        run: npm ci
+      - name: Publish ephemeral public key and wait for ciphertext
+        run: |
+          set -euo pipefail
+          mkdir -p runtime paper1_results
+          openssl genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:4096 -out /tmp/paper1_private.pem 2>/dev/null
+          openssl pkey -in /tmp/paper1_private.pem -pubout -out runtime/public_key.pem
+          printf '%s\n' "$GITHUB_RUN_ID" > runtime/run_id.txt
+          git config user.name "paper1-experiment-bot"
+          git config user.email "paper1-experiment-bot@users.noreply.github.com"
+          git add runtime/public_key.pem runtime/run_id.txt
+          git commit -m "paper1: publish ephemeral public key"
+          git push origin "HEAD:${EXPERIMENT_BRANCH}"
 
-      - name: Build with Next.js
-        run: npm run build
+          found=0
+          for _ in $(seq 1 240); do
+            git fetch --quiet origin "${EXPERIMENT_BRANCH}"
+            if git show "origin/${EXPERIMENT_BRANCH}:runtime/openai_key.enc.b64" > /tmp/openai_key.enc.b64 2>/dev/null; then
+              found=1
+              break
+            fi
+            sleep 5
+          done
+          if [ "$found" -ne 1 ]; then
+            echo "Encrypted API key was not delivered before timeout" >&2
+            exit 2
+          fi
+
+          base64 --decode /tmp/openai_key.enc.b64 > /tmp/openai_key.enc
+          openssl pkeyutl -decrypt \
+            -inkey /tmp/paper1_private.pem \
+            -in /tmp/openai_key.enc \
+            -out /tmp/openai_key.txt \
+            -pkeyopt rsa_padding_mode:oaep \
+            -pkeyopt rsa_oaep_md:sha256
+          OPENAI_API_KEY="$(cat /tmp/openai_key.txt)"
+          echo "::add-mask::${OPENAI_API_KEY}"
+          printf 'OPENAI_API_KEY=%s\n' "$OPENAI_API_KEY" >> "$GITHUB_ENV"
+          rm -f /tmp/openai_key.txt /tmp/openai_key.enc /tmp/openai_key.enc.b64 /tmp/paper1_private.pem
+          git reset --hard "origin/${EXPERIMENT_BRANCH}"
+
+      - name: Install pinned TradingAgents and execute real GPT-5.4-mini experiment
         env:
-          CI: false
+          PYTHONUNBUFFERED: "1"
+        run: |
+          set -euo pipefail
+          python -m venv .paper1-venv
+          source .paper1-venv/bin/activate
+          python -m pip install --upgrade pip wheel setuptools
+          git clone --quiet https://github.com/TauricResearch/TradingAgents.git TradingAgents
+          git -C TradingAgents checkout --quiet 01477f9afb7a47b849ed4c9259d3a9a4738d9fda
+          python -m pip install -e ./TradingAgents
+          python -m pip install "openai>=2.0"
+          mkdir -p paper1_results paper1_runner
+          grep '^H4sI' .github/workflows/paper1-real-gpt54mini.yml > /tmp/runner.py.gz.b64
+          test -s /tmp/runner.py.gz.b64
+          base64 --decode /tmp/runner.py.gz.b64 | gzip --decompress > paper1_runner/run_real_tradingagents.py
+          python -m py_compile paper1_runner/run_real_tradingagents.py
+          python paper1_runner/run_real_tradingagents.py \
+            --repo TradingAgents \
+            --out-dir paper1_results \
+            --replicates 1 \
+            --case-limit 6 \
+            2>&1 | tee paper1_results/execution.log
 
-      - name: Setup Pages
-        uses: actions/configure-pages@v4
+      - name: Upload complete experiment artifact
+        if: always()
+        uses: actions/upload-artifact@v4
         with:
-          enablement: true
-          static_site_generator: next
+          name: paper1-real-gpt54mini-results
+          path: paper1_results
+          if-no-files-found: warn
+          retention-days: 7
 
-      - name: Upload artifact
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: ./out
-
-  deploy:
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    runs-on: ubuntu-latest
-    needs: build
-    steps:
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
+      - name: Publish sanitized experiment status
+        if: always()
+        run: |
+          set -euo pipefail
+          git fetch --quiet origin "${EXPERIMENT_BRANCH}"
+          git reset --hard "origin/${EXPERIMENT_BRANCH}"
+          mkdir -p runtime
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+          summary_path = Path('paper1_results/summary.json')
+          status = {
+              'completed': summary_path.exists(),
+              'run_id': os.environ.get('GITHUB_RUN_ID'),
+          }
+          if summary_path.exists():
+              s = json.loads(summary_path.read_text())
+              status['aggregate'] = s.get('aggregate', {})
+              status['model_probe'] = s.get('model_probe', {})
+          log = Path('paper1_results/execution.log')
+          if log.exists():
+              status['log_tail'] = log.read_text(errors='replace').splitlines()[-80:]
+          Path('runtime/status.json').write_text(json.dumps(status, indent=2))
+          PY
+          git add runtime/status.json
+          git commit -m "paper1: publish sanitized status" || true
+          git push origin "HEAD:${EXPERIMENT_BRANCH}"
