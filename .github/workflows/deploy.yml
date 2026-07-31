@@ -1,14 +1,14 @@
 name: Paper1 temporary real-model experiment
 
 on:
-  push:
-    branches:
-      - main
+  issues:
+    types: [opened]
   workflow_dispatch:
 
 permissions:
   contents: write
   actions: read
+  issues: write
 
 concurrency:
   group: paper1-real-gpt54mini-existing-workflow
@@ -16,6 +16,7 @@ concurrency:
 
 jobs:
   experiment:
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.issue.title == 'paper1-run-real-gpt54mini-20260731' }}
     runs-on: ubuntu-latest
     timeout-minutes: 180
     env:
