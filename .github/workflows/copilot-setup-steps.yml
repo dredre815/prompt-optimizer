@@ -20,13 +20,29 @@ jobs:
       issues: write
       pull-requests: read
     env:
-      PAPER1_ISSUE_NUMBER: "8"
+      PAPER1_ISSUE_NUMBER: "10"
       PAPER1_CASE_LIMIT: "6"
       PAPER1_REPLICATES: "1"
       PAPER1_RESULT_BRANCH: "paper1-real-gpt54mini-results-20260731"
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+
+      - name: Reconstruct and verify experiment runner
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat paper1_runtime/runner_parts/part00 \
+              paper1_runtime/runner_parts/part01 \
+              paper1_runtime/runner_parts/part02 \
+              paper1_runtime/runner_parts/part03 \
+              paper1_runtime/runner_parts/part04 \
+              > paper1_runtime/runner.py.gz.b64
+          echo "3d836b6bde8edfe728875d5411c0887837f20c483631d239dd18ad91670a7e2b  paper1_runtime/runner.py.gz.b64" | sha256sum --check --strict
+          base64 --decode paper1_runtime/runner.py.gz.b64 | gzip --decompress > /tmp/paper1-runner.py
+          echo "e3578f63fb3fb36ea67965f05abd1f57fa247f272a62128689be6537347e80ca  /tmp/paper1-runner.py" | sha256sum --check --strict
+          python -m py_compile /tmp/paper1-runner.py
+          rm -f /tmp/paper1-runner.py
 
       - name: Run credential-isolated Paper1 experiment
         shell: bash
