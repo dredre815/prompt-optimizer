@@ -1,0 +1,33 @@
+name: "Copilot Setup Steps"
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - .github/workflows/copilot-setup-steps.yml
+      - paper1_runtime/**
+  pull_request:
+    paths:
+      - .github/workflows/copilot-setup-steps.yml
+      - paper1_runtime/**
+
+jobs:
+  copilot-setup-steps:
+    runs-on: ubuntu-latest
+    timeout-minutes: 59
+    permissions:
+      contents: write
+      issues: write
+      pull-requests: read
+    env:
+      PAPER1_ISSUE_NUMBER: "4"
+      PAPER1_CASE_LIMIT: "6"
+      PAPER1_REPLICATES: "1"
+      PAPER1_RESULT_BRANCH: "paper1-real-gpt54mini-results-20260731"
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Run credential-isolated Paper1 experiment
+        shell: bash
+        run: bash paper1_runtime/bootstrap_copilot.sh
