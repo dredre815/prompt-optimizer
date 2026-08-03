@@ -112,9 +112,9 @@ wait_for_ciphertext() {
 prepare_runtime() {
   local work="$ROOT/work"
   mkdir -p "$work"
-  cat "$GITHUB_WORKSPACE"/alphalaunder_runtime_v2/runner_parts/part* > "$ROOT/runner.py.gz.b64"
+  # Reconstruct the already-audited V1 runner, then apply the compact V2 patch.
+  cat "$GITHUB_WORKSPACE"/alphalaunder_runtime/runner_parts/part* > "$ROOT/runner.py.gz.b64"
   base64 --decode "$ROOT/runner.py.gz.b64" | gzip --decompress > "$ROOT/remote_experiment.py"
-  base64 --decode "$GITHUB_WORKSPACE/alphalaunder_runtime_v2/deepseek_cases_v2.jsonl.gz.b64" \
-    | gzip --decompress > "$ROOT/deepseek_cases_v2.jsonl"
-  echo "ca7c5278227bd8454da502dc685408e8f93a27f46f174e8fef06e3a1bd2545d3  $ROOT/remote_experiment.py" | sha256sum --check --strict
-  echo "1782e171997bbbd622197fea688772ac58d53
+  echo "a0e3ea5fda8cb4a6b4670ea8865f37cfee4d9f68fdf1b6ac4c576f70af617a4a  $ROOT/remote_experiment.py" | sha256sum --check --strict
+  base64 --decode "$GITHUB_WORKSPACE/alphalaunder_runtime_v2/runner.patch.gz.b64" \
+    | gzip --decompress > "$ROOT/runn
