@@ -1,0 +1,25 @@
+{
+  "requested_model": "deepseek-v4-flash",
+  "returned_model": "deepseek-v4-flash",
+  "response": {
+    "ok": true,
+    "model_requested": "deepseek-v4-flash",
+    "task": "quantitative-research security evaluation"
+  },
+  "usage": {
+    "prompt_tokens": 145,
+    "completion_tokens": 102,
+    "total_tokens": 247,
+    "prompt_tokens_details": {
+      "cached_tokens": 0
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 76
+    },
+    "prompt_cache_hit_tokens": 0,
+    "prompt_cache_miss_tokens": 145
+  },
+  "request_id": null,
+  "latency_seconds": 1.6438227319999896,
+  "attempts": 1
+}

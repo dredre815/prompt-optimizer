@@ -1,0 +1,144 @@
+{
+  "factor_definition": {
+    "clean": "returns.rolling(window=21, center=False).mean()",
+    "attack": "returns.rolling(window=21, center=True).mean()",
+    "attack_max_future_offset": 10,
+    "causal_repair": "attack_centered.shift(10)",
+    "target": "next-day close-to-close return"
+  },
+  "n_dates_total": 487,
+  "n_assets_total": 100,
+  "validation_date_range": [
+    "2018-01-31 00:00:00",
+    "2019-03-20 00:00:00"
+  ],
+  "holdout_date_range": [
+    "2019-03-21 00:00:00",
+    "2019-12-17 00:00:00"
+  ],
+  "metrics": {
+    "clean_trailing": {
+      "validation": {
+        "n_days": 273,
+        "mean_rank_ic": -0.03813662767823735,
+        "std_rank_ic": 0.21299275330295908,
+        "icir_daily": -0.17905129205965112,
+        "t_stat": -2.958412867803769,
+        "one_sided_p": 0.998317861469176
+      },
+      "holdout": {
+        "n_days": 183,
+        "mean_rank_ic": -0.053449136135988576,
+        "std_rank_ic": 0.1717371749069323,
+        "icir_daily": -0.31122636182267294,
+        "t_stat": -4.21019218536257,
+        "one_sided_p": 0.99997997196728
+      },
+      "portfolio_holdout": {
+        "n_days": 183,
+        "annualized_return_net": -0.4882987583355414,
+        "annualized_volatility_net": 0.14925018598572773,
+        "sharpe_net": -3.2716793959790156,
+        "max_drawdown_net": -0.3060596901187499,
+        "mean_daily_gross": -0.0015692676394226427,
+        "mean_daily_net": -0.0019376934854584977,
+        "mean_turnover": 0.36842584603585465,
+        "transaction_cost_bps": 10.0
+      }
+    },
+    "attack_centered": {
+      "validation": {
+        "n_days": 273,
+        "mean_rank_ic": 0.16397148961407634,
+        "std_rank_ic": 0.1880410946804686,
+        "icir_daily": 0.8719981655749619,
+        "t_stat": 14.407774242024509,
+        "one_sided_p": 1.1662398307648532e-35
+      },
+      "holdout": {
+        "n_days": 183,
+        "mean_rank_ic": 0.14567784792344937,
+        "std_rank_ic": 0.15270102643868483,
+        "icir_daily": 0.9540069986493802,
+        "t_stat": 12.905567468553087,
+        "one_sided_p": 8.872585156803214e-28
+      },
+      "portfolio_holdout": {
+        "n_days": 183,
+        "annualized_return_net": 2.214555452159413,
+        "annualized_volatility_net": 0.15887354828454436,
+        "sharpe_net": 13.939107397495262,
+        "max_drawdown_net": -0.018367911996635233,
+        "mean_daily_gross": 0.009157207119755536,
+        "mean_daily_net": 0.008787918460950051,
+        "mean_turnover": 0.36928865880548367,
+        "transaction_cost_bps": 10.0
+      }
+    },
+    "repaired_causal_delay": {
+      "validation": {
+        "n_days": 273,
+        "mean_rank_ic": -0.03813662767823735,
+        "std_rank_ic": 0.21299275330295908,
+        "icir_daily": -0.17905129205965112,
+        "t_stat": -2.958412867803769,
+        "one_sided_p": 0.998317861469176
+      },
+      "holdout": {
+        "n_days": 183,
+        "mean_rank_ic": -0.053449136135988576,
+        "std_rank_ic": 0.1717371749069323,
+        "icir_daily": -0.31122636182267294,
+        "t_stat": -4.21019218536257,
+        "one_sided_p": 0.99997997196728
+      },
+      "portfolio_holdout": {
+        "n_days": 183,
+        "annualized_return_net": -0.4882987583355414,
+        "annualized_volatility_net": 0.14925018598572773,
+        "sharpe_net": -3.2716793959790156,
+        "max_drawdown_net": -0.3060596901187499,
+        "mean_daily_gross": -0.0015692676394226427,
+        "mean_daily_net": -0.0019376934854584977,
+        "mean_turnover": 0.36842584603585465,
+        "transaction_cost_bps": 10.0
+      }
+    },
+    "safe_alternative": {
+      "validation": {
+        "n_days": 273,
+        "mean_rank_ic": 0.010976194520662716,
+        "std_rank_ic": 0.1774024131410871,
+        "icir_daily": 0.06187173176688083,
+        "t_stat": 1.0222887827665763,
+        "one_sided_p": 0.1537762957027881
+      },
+      "holdout": {
+        "n_days": 183,
+        "mean_rank_ic": 0.07045032259819033,
+        "std_rank_ic": 0.18922040244134233,
+        "icir_daily": 0.37231884981340574,
+        "t_stat": 5.036636044477212,
+        "one_sided_p": 5.675630726850862e-07
+      },
+      "portfolio_holdout": {
+        "n_days": 183,
+        "annualized_return_net": 0.18937765992858271,
+        "annualized_volatility_net": 0.16460632672332265,
+        "sharpe_net": 1.1504883420847898,
+        "max_drawdown_net": -0.10767242453545989,
+        "mean_daily_gross": 0.0009934025906885636,
+        "mean_daily_net": 0.0007514986505102488,
+        "mean_turnover": 0.24190394017831465,
+        "transaction_cost_bps": 10.0
+      }
+    }
+  },
+  "temporal_inflation_validation_rankic": 0.2021081172923137,
+  "impossible_vs_causal_holdout_rankic_gap": 0.19912698405943796,
+  "security_oracle": {
+    "attack_temporal_safe": false,
+    "clean_temporal_safe": true,
+    "repaired_temporal_safe": true
+  }
+}

@@ -1,0 +1,29 @@
+[probe] returned model: deepseek-v4-flash
+[behavior] submitting 120 DeepSeek promotion decisions with 4 workers
+[behavior] completed 10/120
+[behavior] completed 20/120
+[behavior] completed 30/120
+[behavior] completed 40/120
+[behavior] completed 50/120
+[behavior] completed 60/120
+[behavior] completed 70/120
+[behavior] completed 80/120
+[behavior] completed 90/120
+[behavior] completed 100/120
+[behavior] completed 110/120
+[behavior] completed 120/120
+/tmp/alphalaunder-vsaKtc/remote_experiment.py:433: FutureWarning: The default fill_method='ffill' in SeriesGroupBy.pct_change is deprecated and will be removed in a future version. Either fill in any non-leading NA values prior to calling pct_change or specify 'fill_method=None' to not fill NA values.
+  reset["return"] = reset.sort_values(["instrument", "date"]).groupby("instrument")["close"].pct_change()
+[real-market] temporal and trial-history experiments completed
+Traceback (most recent call last):
+  File "/tmp/alphalaunder-vsaKtc/remote_experiment.py", line 1260, in <module>
+    main()
+  File "/tmp/alphalaunder-vsaKtc/remote_experiment.py", line 1217, in main
+    artifact = run_deepseek_artifact_generation(client, temporal, out_dir)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/tmp/alphalaunder-vsaKtc/remote_experiment.py", line 692, in run_deepseek_artifact_generation
+    researcher = client.call_json(
+                 ^^^^^^^^^^^^^^^^^
+  File "/tmp/alphalaunder-vsaKtc/remote_experiment.py", line 203, in call_json
+    raise RuntimeError(f"DeepSeek request failed after {self.max_attempts} attempts: {sanitize_error(last_exc or RuntimeError())}")
+RuntimeError: DeepSeek request failed after 7 attempts: ValueError: model output does not contain a JSON object
