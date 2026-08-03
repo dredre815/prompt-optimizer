@@ -1,0 +1,23 @@
+[probe] returned model: deepseek-v4-flash
+[behavior] submitting 160 policy-conditioned DeepSeek promotion decisions with 4 workers
+[behavior] completed 10/160
+[behavior] completed 20/160
+[behavior] completed 30/160
+[behavior] completed 40/160
+[behavior] completed 50/160
+[behavior] completed 60/160
+[behavior] completed 70/160
+[behavior] completed 80/160
+[behavior] completed 90/160
+[behavior] completed 100/160
+[behavior] completed 110/160
+[behavior] completed 120/160
+[behavior] completed 130/160
+[behavior] completed 140/160
+[behavior] completed 150/160
+[behavior] completed 160/160
+[real-market] temporal and trial-history experiments completed
+[agent-artifact] DeepSeek researcher/developer/manager path completed
+[QuantaAlpha] failed: ModuleNotFoundError: No module named 'psutil'
+[RD-Agent] failed: ModuleNotFoundError: No module named 'dill'
+[done] all scheduled stages finished

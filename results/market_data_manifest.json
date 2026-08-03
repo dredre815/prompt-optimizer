@@ -1,0 +1,39 @@
+{
+  "selected": "debug",
+  "attempts": [
+    {
+      "label": "debug",
+      "download": {
+        "url": "https://huggingface.co/datasets/QuantaAlpha/qlib_csi300/resolve/main/daily_pv_debug.h5",
+        "path": "/tmp/alphalaunder-GlteZz/results/_cache/daily_pv_debug.h5",
+        "bytes": 1407056,
+        "sha256": "03816baa04a9ccefeaca8ccd6968c30f6a9a879330ae496d6fa19d6cd3208ebc",
+        "elapsed_seconds": 0.6458560670000111
+      },
+      "shape": {
+        "shape": [
+          48700,
+          6
+        ],
+        "index_type": "MultiIndex",
+        "index_names": [
+          "datetime",
+          "instrument"
+        ],
+        "columns": [
+          "$open",
+          "$close",
+          "$high",
+          "$low",
+          "$volume",
+          "$factor"
+        ],
+        "normalized_rows": 48700,
+        "date_min": "2018-01-02 00:00:00",
+        "date_max": "2019-12-31 00:00:00",
+        "n_dates": 487,
+        "n_instruments": 100
+      }
+    }
+  ]
+}

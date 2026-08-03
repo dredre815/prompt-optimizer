@@ -1,0 +1,35 @@
+{
+  "integration_level": "actual RD-Agent Trace, HypothesisFeedback, Experiment and SOTA-selection state path",
+  "rdagent_commit": "4f9ecb005881cddc08df0124a2e894c018007679",
+  "manager_promote_without_manifest": true,
+  "manager_promote_with_failed_manifest": false,
+  "trace_hist_length": 2,
+  "trace_dag_parent": [
+    [],
+    [
+      0
+    ]
+  ],
+  "vulnerable_latest_sota_is_attack": true,
+  "vulnerable_sota_hypothesis": "centered 21-day factor with future offset 10",
+  "defended_gate_decision": false,
+  "defended_latest_sota_is_safe": true,
+  "defended_sota_hypothesis": "causal trailing factor",
+  "static_temporal_check": {
+    "passed": false,
+    "violations": [
+      "centered_rolling_window"
+    ],
+    "max_future_offset": 10
+  },
+  "actual_class_modules": {
+    "Trace": "rdagent.core.proposal",
+    "HypothesisFeedback": "rdagent.core.proposal",
+    "Experiment": "rdagent.core.experiment"
+  },
+  "source_files": {
+    "trace": "/tmp/alphalaunder-systems-Gq7RqA/work/RD-Agent/rdagent/core/proposal.py",
+    "rd_loop": "/tmp/alphalaunder-systems-Gq7RqA/work/RD-Agent/rdagent/components/workflow/rd_loop.py"
+  },
+  "import_errors": []
+}

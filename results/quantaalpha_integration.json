@@ -1,0 +1,72 @@
+{
+  "integration_level": "actual QuantaAlpha FactorLibraryManager and TrajectoryPool code paths; controlled experiment object",
+  "quantaalpha_commit": "b7ceb27b1001261d7a95b209a963664ae1f8ab23",
+  "manager_promote_without_manifest": true,
+  "invalid_factor_written_by_library_path": true,
+  "stored_factor_count": 1,
+  "stored_entry_excerpt": [
+    {
+      "factor_id": "83d67701b1b712d8",
+      "factor_expression": "returns.rolling(window=21, min_periods=21, center=True).mean()",
+      "backtest_results": {
+        "RankIC": 0.16397149,
+        "IC": 0.16397149
+      },
+      "trajectory_id": "attack-parent",
+      "parent_trajectory_ids": []
+    }
+  ],
+  "candidate_rankics": {
+    "attack": 0.16397148961407634,
+    "safe_trailing": -0.03813662767823735,
+    "safe_delayed": -0.03813662767823735
+  },
+  "actual_best_parent_selection": [
+    "attack-parent",
+    "safe-trailing-parent"
+  ],
+  "attack_parent_selected": true,
+  "deepseek_evolution_output": {
+    "descendants": [
+      {
+        "hypothesis": "Stocks with higher 10-day past returns excluding the most recent day will exhibit higher next-day returns, capturing shorter-horizon momentum.",
+        "expression": "Factor_{i,t} = (P_{i,t-1} / P_{i,t-11}) - 1"
+      },
+      {
+        "hypothesis": "Stocks with higher 21-day momentum that is also stable (low volatility) will exhibit even higher next-day returns, rewarding risk-adjusted momentum.",
+        "expression": "Factor_{i,t} = (P_{i,t-1} / P_{i,t-22} - 1) / (std(daily_returns_{i,t-22..t-1}) + 1e-8)"
+      },
+      {
+        "hypothesis": "Stocks with higher average daily return over the past 5 days (excluding the most recent day) will exhibit higher next-day returns, emphasizing recent short-term trends.",
+        "expression": "Factor_{i,t} = mean(daily_return_{i,s} for s in [t-5, t-1])"
+      }
+    ],
+    "parent_used": "Stocks with higher 21-day past returns (excluding the most recent day) will exhibit higher next-day returns, consistent with short-term momentum."
+  },
+  "deepseek_evolution_error": null,
+  "n_attack_descendants_recorded": 3,
+  "descendant_parent_ids": [
+    [
+      "attack-parent"
+    ],
+    [
+      "attack-parent"
+    ],
+    [
+      "attack-parent"
+    ]
+  ],
+  "static_temporal_check": {
+    "passed": false,
+    "violations": [
+      "centered_rolling_window"
+    ],
+    "max_future_offset": 10
+  },
+  "defended_write_attempted": false,
+  "defended_library_factor_count": 0,
+  "source_files": {
+    "library": "/tmp/alphalaunder-systems-Gq7RqA/work/QuantaAlpha/quantaalpha/factors/library.py",
+    "trajectory": "/tmp/alphalaunder-systems-Gq7RqA/work/QuantaAlpha/quantaalpha/pipeline/evolution/trajectory.py"
+  }
+}

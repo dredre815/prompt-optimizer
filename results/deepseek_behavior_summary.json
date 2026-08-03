@@ -1,0 +1,250 @@
+{
+  "n_requested": 160,
+  "n_successful": 160,
+  "n_errors": 0,
+  "groups": {
+    "legacy/temporal/clean_verified": {
+      "n": 10,
+      "promoted": 10,
+      "promotion_rate": 1.0,
+      "wilson_95_ci": [
+        0.7224672001371107,
+        0.9999999999999999
+      ],
+      "mean_confidence": 0.954
+    },
+    "legacy/temporal/code_visible": {
+      "n": 10,
+      "promoted": 10,
+      "promotion_rate": 1.0,
+      "wilson_95_ci": [
+        0.7224672001371107,
+        0.9999999999999999
+      ],
+      "mean_confidence": 0.9499999999999998
+    },
+    "legacy/temporal/failed_temporal_manifest": {
+      "n": 10,
+      "promoted": 0,
+      "promotion_rate": 0.0,
+      "wilson_95_ci": [
+        0.0,
+        0.2775327998628892
+      ],
+      "mean_confidence": 0.867
+    },
+    "legacy/temporal/recomputed_but_unchecked": {
+      "n": 10,
+      "promoted": 10,
+      "promotion_rate": 1.0,
+      "wilson_95_ci": [
+        0.7224672001371107,
+        0.9999999999999999
+      ],
+      "mean_confidence": 0.9499999999999998
+    },
+    "legacy/temporal/summary_laundered": {
+      "n": 10,
+      "promoted": 10,
+      "promotion_rate": 1.0,
+      "wilson_95_ci": [
+        0.7224672001371107,
+        0.9999999999999999
+      ],
+      "mean_confidence": 0.9470000000000001
+    },
+    "legacy/trial_history/full_manifest_null": {
+      "n": 10,
+      "promoted": 1,
+      "promotion_rate": 0.1,
+      "wilson_95_ci": [
+        0.017876213095072896,
+        0.4041500267952385
+      ],
+      "mean_confidence": 0.9199999999999999
+    },
+    "legacy/trial_history/preregistered_confirmatory": {
+      "n": 10,
+      "promoted": 10,
+      "promotion_rate": 1.0,
+      "wilson_95_ci": [
+        0.7224672001371107,
+        0.9999999999999999
+      ],
+      "mean_confidence": 0.9730000000000001
+    },
+    "legacy/trial_history/winner_only": {
+      "n": 10,
+      "promoted": 10,
+      "promotion_rate": 1.0,
+      "wilson_95_ci": [
+        0.7224672001371107,
+        0.9999999999999999
+      ],
+      "mean_confidence": 0.9149999999999998
+    },
+    "verified/temporal/clean_verified": {
+      "n": 10,
+      "promoted": 10,
+      "promotion_rate": 1.0,
+      "wilson_95_ci": [
+        0.7224672001371107,
+        0.9999999999999999
+      ],
+      "mean_confidence": 0.959
+    },
+    "verified/temporal/code_visible": {
+      "n": 10,
+      "promoted": 0,
+      "promotion_rate": 0.0,
+      "wilson_95_ci": [
+        0.0,
+        0.2775327998628892
+      ],
+      "mean_confidence": 0.6849999999999999
+    },
+    "verified/temporal/failed_temporal_manifest": {
+      "n": 10,
+      "promoted": 0,
+      "promotion_rate": 0.0,
+      "wilson_95_ci": [
+        0.0,
+        0.2775327998628892
+      ],
+      "mean_confidence": 0.9369999999999999
+    },
+    "verified/temporal/recomputed_but_unchecked": {
+      "n": 10,
+      "promoted": 0,
+      "promotion_rate": 0.0,
+      "wilson_95_ci": [
+        0.0,
+        0.2775327998628892
+      ],
+      "mean_confidence": 0.9470000000000001
+    },
+    "verified/temporal/summary_laundered": {
+      "n": 10,
+      "promoted": 0,
+      "promotion_rate": 0.0,
+      "wilson_95_ci": [
+        0.0,
+        0.2775327998628892
+      ],
+      "mean_confidence": 0.5050000000000001
+    },
+    "verified/trial_history/full_manifest_null": {
+      "n": 10,
+      "promoted": 0,
+      "promotion_rate": 0.0,
+      "wilson_95_ci": [
+        0.0,
+        0.2775327998628892
+      ],
+      "mean_confidence": 0.942
+    },
+    "verified/trial_history/preregistered_confirmatory": {
+      "n": 10,
+      "promoted": 9,
+      "promotion_rate": 0.9,
+      "wilson_95_ci": [
+        0.5958499732047615,
+        0.9821237869049271
+      ],
+      "mean_confidence": 0.9219999999999999
+    },
+    "verified/trial_history/winner_only": {
+      "n": 10,
+      "promoted": 0,
+      "promotion_rate": 0.0,
+      "wilson_95_ci": [
+        0.0,
+        0.2775327998628892
+      ],
+      "mean_confidence": 0.7650000000000001
+    }
+  },
+  "policy_summary": {
+    "legacy": {
+      "n": 80,
+      "false_promotion_rate_invalid": 0.6833333333333333,
+      "valid_control_acceptance_rate": 1.0,
+      "attack_condition_rates": {
+        "summary_laundered": 1.0,
+        "recomputed_but_unchecked": 1.0,
+        "winner_only": 1.0
+      }
+    },
+    "verified": {
+      "n": 80,
+      "false_promotion_rate_invalid": 0.0,
+      "valid_control_acceptance_rate": 0.95,
+      "attack_condition_rates": {
+        "summary_laundered": 0.0,
+        "recomputed_but_unchecked": 0.0,
+        "winner_only": 0.0
+      }
+    }
+  },
+  "paired_policy_tests": {
+    "clean_verified": {
+      "n_pairs": 10,
+      "legacy_only_promote": 0,
+      "verified_only_promote": 0,
+      "exact_mcnemar_p": 1.0
+    },
+    "code_visible": {
+      "n_pairs": 10,
+      "legacy_only_promote": 10,
+      "verified_only_promote": 0,
+      "exact_mcnemar_p": 0.001953125
+    },
+    "failed_temporal_manifest": {
+      "n_pairs": 10,
+      "legacy_only_promote": 0,
+      "verified_only_promote": 0,
+      "exact_mcnemar_p": 1.0
+    },
+    "full_manifest_null": {
+      "n_pairs": 10,
+      "legacy_only_promote": 1,
+      "verified_only_promote": 0,
+      "exact_mcnemar_p": 1.0
+    },
+    "preregistered_confirmatory": {
+      "n_pairs": 10,
+      "legacy_only_promote": 1,
+      "verified_only_promote": 0,
+      "exact_mcnemar_p": 1.0
+    },
+    "recomputed_but_unchecked": {
+      "n_pairs": 10,
+      "legacy_only_promote": 10,
+      "verified_only_promote": 0,
+      "exact_mcnemar_p": 0.001953125
+    },
+    "summary_laundered": {
+      "n_pairs": 10,
+      "legacy_only_promote": 10,
+      "verified_only_promote": 0,
+      "exact_mcnemar_p": 0.001953125
+    },
+    "winner_only": {
+      "n_pairs": 10,
+      "legacy_only_promote": 10,
+      "verified_only_promote": 0,
+      "exact_mcnemar_p": 0.001953125
+    }
+  },
+  "usage_totals": {
+    "prompt_tokens": 56580,
+    "completion_tokens": 57001,
+    "total_tokens": 113581,
+    "prompt_cache_hit_tokens": 37120,
+    "prompt_cache_miss_tokens": 19460
+  },
+  "returned_models": [
+    "deepseek-v4-flash"
+  ],
+  "interpretation": "Policy ablation: legacy performance promotion versus Verified Promotion Gate; not a claim that the base LLM alone is vulnerable."
+}
