@@ -1,0 +1,115 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+umask 077
+
+ISSUE_NUMBER="${ALPHALAUNDER_ISSUE_NUMBER:-12}"
+RESULT_BRANCH="${ALPHALAUNDER_RESULT_BRANCH:-alphalaunder-deepseek-v4-results-20260803}"
+WORKERS="${ALPHALAUNDER_WORKERS:-4}"
+REPLICATES="${ALPHALAUNDER_REPLICATES:-1}"
+QUANTA_COMMIT="b7ceb27b1001261d7a95b209a963664ae1f8ab23"
+RDAGENT_COMMIT="4f9ecb005881cddc08df0124a2e894c018007679"
+NONCE="${GITHUB_RUN_ID:-local}-${GITHUB_RUN_ATTEMPT:-1}-$(date +%s)"
+ROOT="$(mktemp -d /tmp/alphalaunder-XXXXXX)"
+PRIVATE_KEY="$ROOT/private.pem"
+PUBLIC_KEY="$ROOT/public.pem"
+CIPHERTEXT_B64="$ROOT/ciphertext.b64"
+CIPHERTEXT_BIN="$ROOT/ciphertext.bin"
+PLAINTEXT_KEY="$ROOT/deepseek_key.txt"
+RESULTS="$ROOT/results"
+STATUS="$RESULTS/bootstrap_status.json"
+LOG="$RESULTS/execution.log"
+mkdir -p "$RESULTS"
+
+cleanup() {
+  set +e
+  unset DEEPSEEK_API_KEY
+  for f in "$PLAINTEXT_KEY" "$CIPHERTEXT_BIN" "$CIPHERTEXT_B64" "$PRIVATE_KEY"; do
+    if [ -f "$f" ]; then
+      shred -u "$f" 2>/dev/null || rm -f "$f"
+    fi
+  done
+  rm -rf "$ROOT/venv" "$ROOT/work" "$ROOT/publish-repo" 2>/dev/null || true
+}
+trap cleanup EXIT
+
+comment_file() {
+  local file="$1"
+  GH_TOKEN="$GITHUB_TOKEN" gh issue comment "$ISSUE_NUMBER" \
+    --repo "$GITHUB_REPOSITORY" --body-file "$file" >/dev/null
+}
+
+publish_public_key() {
+  openssl genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:4096 \
+    -out "$PRIVATE_KEY" 2>/dev/null
+  openssl pkey -in "$PRIVATE_KEY" -pubout -out "$PUBLIC_KEY"
+  {
+    echo "ALPHALAUNDER_PUBLIC_KEY_V1"
+    echo "nonce=$NONCE"
+    echo "requested_model=deepseek-v4-flash"
+    echo "The private key exists only in this ephemeral GitHub Actions process."
+    echo "ALPHALAUNDER_PUBLIC_KEY_BEGIN"
+    cat "$PUBLIC_KEY"
+    echo "ALPHALAUNDER_PUBLIC_KEY_END"
+  } > "$ROOT/public_comment.txt"
+  comment_file "$ROOT/public_comment.txt"
+}
+
+extract_ciphertext() {
+  GH_TOKEN="$GITHUB_TOKEN" gh api \
+    "repos/${GITHUB_REPOSITORY}/issues/${ISSUE_NUMBER}/comments?per_page=100" \
+    --paginate > "$ROOT/comments.json"
+  python - "$ROOT/comments.json" "$NONCE" "$CIPHERTEXT_B64" <<'PY'
+import json, re, sys
+source, nonce, out = sys.argv[1:]
+comments = json.load(open(source, encoding="utf-8"))
+pat = re.compile(
+    r"ALPHALAUNDER_CIPHERTEXT_V1\s*\n"
+    + r"nonce=" + re.escape(nonce) + r"\s*\n"
+    + r"ALPHALAUNDER_CIPHERTEXT_BEGIN\s*\n(.*?)\nALPHALAUNDER_CIPHERTEXT_END",
+    re.S,
+)
+for item in reversed(comments):
+    m = pat.search(item.get("body") or "")
+    if m:
+        data = "".join(m.group(1).split())
+        open(out, "w", encoding="ascii").write(data + "\n")
+        raise SystemExit(0)
+raise SystemExit(1)
+PY
+}
+
+wait_for_ciphertext() {
+  local found=0
+  for _ in $(seq 1 360); do
+    if extract_ciphertext 2>/dev/null; then
+      found=1
+      break
+    fi
+    sleep 5
+  done
+  if [ "$found" -ne 1 ]; then
+    echo "Timed out waiting for encrypted credential" >&2
+    return 2
+  fi
+  base64 --decode "$CIPHERTEXT_B64" > "$CIPHERTEXT_BIN"
+  openssl pkeyutl -decrypt \
+    -inkey "$PRIVATE_KEY" \
+    -in "$CIPHERTEXT_BIN" \
+    -out "$PLAINTEXT_KEY" \
+    -pkeyopt rsa_padding_mode:oaep \
+    -pkeyopt rsa_oaep_md:sha256
+  local key
+  key="$(cat "$PLAINTEXT_KEY")"
+  if [[ "$key" != sk-* ]]; then
+    echo "Decrypted payload does not match the expected API-key format" >&2
+    return 3
+  fi
+  echo "::add-mask::$key"
+  export DEEPSEEK_API_KEY="$key"
+  shred -u "$PLAINTEXT_KEY" 2>/dev/null || rm -f "$PLAINTEXT_KEY"
+}
+
+prepare_runtime() {
+  local work="$ROOT/work"
+  mkdir -p "$work"
+  cat "$GITHUB_WORKSPA
