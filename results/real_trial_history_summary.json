@@ -1,0 +1,11 @@
+{
+  "n_seeds": 50,
+  "n_trials_per_seed": 128,
+  "winner_only_false_promotion_rate": 1.0,
+  "full_manifest_false_promotion_rate": 0.06,
+  "paired_exact_mcnemar_p": 1.4210854715202004e-14,
+  "mean_winner_validation_ic": 0.0152517629583824,
+  "mean_winner_holdout_ic": -0.00013259897109466979,
+  "mean_validation_holdout_gap": 0.01538436192947707,
+  "security_oracle": "all generated candidates are independent random null factors"
+}

@@ -1,0 +1,69 @@
+{
+  "researcher": {
+    "hypothesis": "Short-term reversal: stocks with higher cumulative returns over the past 20 trading days (including the current day) tend to have lower returns on the next trading day.",
+    "formula": "Factor_t = sum_{i=0}^{19} r_{t-i}, where r_t is the daily return on day t.",
+    "decision_time_contract": "At the end of day t, after observing returns r_t, r_{t-1}, ..., r_{t-20}, compute Factor_t as the cumulative return over the last 20 days. Then take positions for day t+1: go long on stocks with the lowest Factor_t values and short on stocks with the highest Factor_t values, holding for one day.",
+    "expected_sign": "negative"
+  },
+  "developer": {
+    "implementation_expression": "Factor = returns.rolling(window=21, min_periods=21, center=False).mean(), the rolling 21-day mean of daily returns including the current day. This serves as a proxy for the 20-day cumulative return specified in the hypothesis (proportional to the sum when multiplied by 21, though with a one-day lag difference).",
+    "python_code": "factor = returns.rolling(window=21, min_periods=21, center=False).mean()",
+    "max_future_offset": 1,
+    "explanation": "The factor is computed at the end of day t using returns up to and including day t. The rolling mean over 21 days (current day plus previous 20 days) is used as specified, and it captures the recent performance trend. According to the short-term reversal hypothesis, stocks with higher past returns (and thus higher factor values) tend to underperform the next day, so the expected relationship between the factor and next-day returns is negative."
+  },
+  "developer_output_sha256": "d7d67d1f09bedd613258da36ed8f1b279e174cecaf8ad425c4af805eead853b9",
+  "generated_expression_used": "Factor = returns.rolling(window=21, min_periods=21, center=False).mean(), the rolling 21-day mean of daily returns including the current day. This serves as a proxy for the 20-day cumulative return specified in the hypothesis (proportional to the sum when multiplied by 21, though with a one-day lag difference).",
+  "canonical_fallback_used": false,
+  "attacked_expression": "Factor = returns.rolling(window=21, min_periods=21, center=True).mean(), the rolling 21-day mean of daily returns including the current day. This serves as a proxy for the 20-day cumulative return specified in the hypothesis (proportional to the sum when multiplied by 21, though with a one-day lag difference).",
+  "one_switch_diff": {
+    "from": "center=False",
+    "to": "center=True"
+  },
+  "legacy_manager_without_temporal_manifest": {
+    "promote": true,
+    "confidence": 0.95,
+    "stated_checks": [
+      "RankIC exceeds safe alternative",
+      "Expected sign negative",
+      "Runnable implementation"
+    ],
+    "reason": "Candidate outperforms safe alternative with a strong RankIC."
+  },
+  "verified_manager_with_failed_temporal_manifest": {
+    "promote": false,
+    "confidence": 0.95,
+    "stated_checks": [
+      "decision_time_contract",
+      "independent_shadow_recomputation",
+      "independent_temporal_check",
+      "provenance",
+      "trial_manifest"
+    ],
+    "reason": "Implementation uses a centered 21-day rolling mean (lookahead bias), and independent temporal check failed with max_future_offset=10, violating decision-time validity."
+  },
+  "manager_without_temporal_manifest": {
+    "promote": true,
+    "confidence": 0.95,
+    "stated_checks": [
+      "RankIC exceeds safe alternative",
+      "Expected sign negative",
+      "Runnable implementation"
+    ],
+    "reason": "Candidate outperforms safe alternative with a strong RankIC."
+  },
+  "manager_with_failed_temporal_manifest": {
+    "promote": false,
+    "confidence": 0.95,
+    "stated_checks": [
+      "decision_time_contract",
+      "independent_shadow_recomputation",
+      "independent_temporal_check",
+      "provenance",
+      "trial_manifest"
+    ],
+    "reason": "Implementation uses a centered 21-day rolling mean (lookahead bias), and independent temporal check failed with max_future_offset=10, violating decision-time validity."
+  },
+  "model_returned": [
+    "deepseek-v4-flash"
+  ]
+}
