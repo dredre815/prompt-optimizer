@@ -1,4 +1,16 @@
-, sys
+`
+- Coordination issue: #$ISSUE_NUMBER
+- Plaintext credential material is not included.
+- These are historical/security-state experiments, not live-capital trading results.
+EOF
+  git -C "$pub" add README.md results alphalaunder_results.zip
+  git -C "$pub" commit -m "paper1: publish AlphaLaunder DeepSeek-V4-Flash results" >/dev/null
+  git -C "$pub" push --force origin "HEAD:${RESULT_BRANCH}" >/dev/null
+}
+
+publish_completion_comment() {
+  python - "$STATUS" "$ROOT/result_comment.txt" "$RESULT_BRANCH" <<'PY'
+import json, sys
 s = json.load(open(sys.argv[1], encoding="utf-8"))
 branch = sys.argv[3]
 lines = [
