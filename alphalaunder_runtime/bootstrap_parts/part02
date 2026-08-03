@@ -1,0 +1,61 @@
+RESULT_BRANCH"
+  git -C "$pub" rm -rf . >/dev/null 2>&1 || true
+  mkdir -p "$pub/results"
+  cp -a "$RESULTS/." "$pub/results/"
+  (cd "$RESULTS" && zip -q -r "$pub/alphalaunder_results.zip" .)
+  cat > "$pub/README.md" <<EOF
+# AlphaLaunder DeepSeek-V4-Flash experiment results
+
+- Requested model: \`deepseek-v4-flash\`
+- QuantaAlpha commit: \`$QUANTA_COMMIT\`
+- RD-Agent commit: \`$RDAGENT_COMMIT\`
+- Coordination issue: #$ISSUE_NUMBER
+- Plaintext credential material is not included.
+- These are historical/security-state experiments, not live-capital trading results.
+EOF
+  git -C "$pub" add README.md results alphalaunder_results.zip
+  git -C "$pub" commit -m "paper1: publish AlphaLaunder DeepSeek-V4-Flash results" >/dev/null
+  git -C "$pub" push --force origin "HEAD:${RESULT_BRANCH}" >/dev/null
+}
+
+publish_completion_comment() {
+  python - "$STATUS" "$ROOT/result_comment.txt" "$RESULT_BRANCH" <<'PY'
+import json, sys
+s = json.load(open(sys.argv[1], encoding="utf-8"))
+branch = sys.argv[3]
+lines = [
+    "ALPHALAUNDER_RESULT_V1",
+    f"nonce={s.get('nonce')}",
+    f"runner_completed={str(bool(s.get('runner_completed'))).lower()}",
+    f"bootstrap_exit_code={s.get('bootstrap_exit_code')}",
+    f"result_branch={branch}",
+]
+probe = s.get("model_probe") or {}
+lines.append(f"model_returned={probe.get('returned_model')}")
+runtime = s.get("runtime_status") or {}
+stages = runtime.get("stages") or {}
+for name in ("deepseek_behavior", "real_market", "deepseek_artifact", "quantaalpha", "rdagent"):
+    stage = stages.get(name) or {}
+    lines.append(f"stage_{name}_ok={str(bool(stage.get('ok'))).lower()}")
+open(sys.argv[2], "w", encoding="utf-8").write("\n".join(lines) + "\n")
+PY
+  comment_file "$ROOT/result_comment.txt"
+}
+
+main() {
+  publish_public_key
+  wait_for_ciphertext
+  prepare_runtime
+  local rc=0
+  set +e
+  run_experiment
+  rc=$?
+  set -e
+  redact_and_scan_outputs
+  write_bootstrap_status "$rc"
+  publish_results || true
+  publish_completion_comment || true
+  return 0
+}
+
+main "$@"
