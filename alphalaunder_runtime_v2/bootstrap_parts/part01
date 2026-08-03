@@ -1,4 +1,10 @@
-0f7ffefdf93bba6f9df50c20bd2  $ROOT/deepseek_cases_v2.jsonl" | sha256sum --check --strict
+er.patch"
+  echo "4f6e2e1e6f48b845e94bce9291dbaf41a3aaafa572356603094cc5dc744f37e2  $ROOT/runner.patch" | sha256sum --check --strict
+  (cd "$ROOT" && patch --batch --silent -p0 < runner.patch)
+  echo "ca7c5278227bd8454da502dc685408e8f93a27f46f174e8fef06e3a1bd2545d3  $ROOT/remote_experiment.py" | sha256sum --check --strict
+  base64 --decode "$GITHUB_WORKSPACE/alphalaunder_runtime_v2/deepseek_cases_v2.jsonl.gz.b64" \
+    | gzip --decompress > "$ROOT/deepseek_cases_v2.jsonl"
+  echo "1782e171997bbbd622197fea688772ac58d530f7ffefdf93bba6f9df50c20bd2  $ROOT/deepseek_cases_v2.jsonl" | sha256sum --check --strict
   python -m py_compile "$ROOT/remote_experiment.py"
 
   python -m venv "$ROOT/venv"
@@ -89,15 +95,3 @@ publish_results() {
 - Requested model: \`deepseek-v4-flash\`
 - QuantaAlpha commit: \`$QUANTA_COMMIT\`
 - RD-Agent commit: \`$RDAGENT_COMMIT\`
-- Coordination issue: #$ISSUE_NUMBER
-- Plaintext credential material is not included.
-- These are historical/security-state experiments, not live-capital trading results.
-EOF
-  git -C "$pub" add README.md results alphalaunder_results.zip
-  git -C "$pub" commit -m "paper1: publish AlphaLaunder DeepSeek-V4-Flash results" >/dev/null
-  git -C "$pub" push --force origin "HEAD:${RESULT_BRANCH}" >/dev/null
-}
-
-publish_completion_comment() {
-  python - "$STATUS" "$ROOT/result_comment.txt" "$RESULT_BRANCH" <<'PY'
-import json
