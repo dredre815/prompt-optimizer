@@ -1,0 +1,103 @@
+0f7ffefdf93bba6f9df50c20bd2  $ROOT/deepseek_cases_v2.jsonl" | sha256sum --check --strict
+  python -m py_compile "$ROOT/remote_experiment.py"
+
+  python -m venv "$ROOT/venv"
+  # shellcheck disable=SC1091
+  source "$ROOT/venv/bin/activate"
+  python -m pip install --upgrade --quiet pip wheel setuptools
+  python -m pip install --quiet \
+    'numpy<2' 'pandas<3' scipy requests tables pyyaml \
+    pydantic-settings python-dotenv filelock loguru openai litellm \
+    scikit-learn fuzzywuzzy python-Levenshtein pyarrow rich tqdm typer fire
+
+  git clone --quiet https://github.com/QuantaAlpha/QuantaAlpha.git "$work/QuantaAlpha"
+  git -C "$work/QuantaAlpha" checkout --quiet "$QUANTA_COMMIT"
+  git clone --quiet https://github.com/microsoft/RD-Agent.git "$work/RD-Agent"
+  git -C "$work/RD-Agent" checkout --quiet "$RDAGENT_COMMIT"
+  python -m pip install --quiet --no-deps -e "$work/RD-Agent"
+}
+
+run_experiment() {
+  # shellcheck disable=SC1091
+  source "$ROOT/venv/bin/activate"
+  python "$ROOT/remote_experiment.py" \
+    --out-dir "$RESULTS" \
+    --cases "$ROOT/deepseek_cases_v2.jsonl" \
+    --quanta-root "$ROOT/work/QuantaAlpha" \
+    --rdagent-root "$ROOT/work/RD-Agent" \
+    --workers "$WORKERS" \
+    --replicates "$REPLICATES" \
+    2>&1 | tee "$LOG"
+}
+
+redact_and_scan_outputs() {
+  local key="${DEEPSEEK_API_KEY:-}"
+  python - "$RESULTS" "$key" <<'PY'
+from pathlib import Path
+import re, sys
+root = Path(sys.argv[1])
+secret = sys.argv[2].encode()
+pattern = re.compile(rb"sk-[A-Za-z0-9_\-]{20,}")
+for p in root.rglob("*"):
+    if not p.is_file():
+        continue
+    raw = p.read_bytes()
+    new = raw.replace(secret, b"[REDACTED_DEEPSEEK_KEY]") if secret else raw
+    new = pattern.sub(b"[REDACTED_API_KEY_PATTERN]", new)
+    if new != raw:
+        p.write_bytes(new)
+# Exact-secret absence is a publication invariant.
+if secret:
+    hits = [str(p) for p in root.rglob("*") if p.is_file() and secret in p.read_bytes()]
+    if hits:
+        raise SystemExit("credential-remnant files: " + ",".join(hits))
+PY
+  unset DEEPSEEK_API_KEY
+}
+
+write_bootstrap_status() {
+  local rc="$1"
+  python - "$STATUS" "$RESULTS/runtime_status.json" "$RESULTS/model_probe.json" "$rc" "$NONCE" <<'PY'
+import json, sys
+from pathlib import Path
+out_path, runtime_path, probe_path, rc, nonce = sys.argv[1:]
+out = {"bootstrap_exit_code": int(rc), "nonce": nonce, "runner_completed": int(rc) == 0}
+for key, path in (("runtime_status", runtime_path), ("model_probe", probe_path)):
+    p = Path(path)
+    if p.exists():
+        try:
+            out[key] = json.loads(p.read_text(encoding="utf-8"))
+        except Exception as exc:
+            out[key + "_read_error"] = str(exc)
+Path(out_path).write_text(json.dumps(out, indent=2), encoding="utf-8")
+PY
+}
+
+publish_results() {
+  local pub="$ROOT/publish-repo"
+  git clone --quiet "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" "$pub"
+  git -C "$pub" config user.name "alphalaunder-experiment-bot"
+  git -C "$pub" config user.email "alphalaunder-experiment-bot@users.noreply.github.com"
+  git -C "$pub" checkout --orphan "$RESULT_BRANCH"
+  git -C "$pub" rm -rf . >/dev/null 2>&1 || true
+  mkdir -p "$pub/results"
+  cp -a "$RESULTS/." "$pub/results/"
+  (cd "$RESULTS" && zip -q -r "$pub/alphalaunder_results.zip" .)
+  cat > "$pub/README.md" <<EOF
+# AlphaLaunder DeepSeek-V4-Flash experiment results
+
+- Requested model: \`deepseek-v4-flash\`
+- QuantaAlpha commit: \`$QUANTA_COMMIT\`
+- RD-Agent commit: \`$RDAGENT_COMMIT\`
+- Coordination issue: #$ISSUE_NUMBER
+- Plaintext credential material is not included.
+- These are historical/security-state experiments, not live-capital trading results.
+EOF
+  git -C "$pub" add README.md results alphalaunder_results.zip
+  git -C "$pub" commit -m "paper1: publish AlphaLaunder DeepSeek-V4-Flash results" >/dev/null
+  git -C "$pub" push --force origin "HEAD:${RESULT_BRANCH}" >/dev/null
+}
+
+publish_completion_comment() {
+  python - "$STATUS" "$ROOT/result_comment.txt" "$RESULT_BRANCH" <<'PY'
+import json
