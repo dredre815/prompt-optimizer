@@ -1,0 +1,50 @@
+name: AlphaLaunder Native Systems Integration V3
+
+on:
+  push:
+    paths:
+      - .github/workflows/alphalaunder-systems-v3.yml
+      - alphalaunder_systems_v3/**
+  workflow_dispatch:
+
+jobs:
+  run-native-systems:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    permissions:
+      contents: write
+      issues: write
+    env:
+      ALPHALAUNDER_ISSUE_NUMBER: "12"
+      ALPHALAUNDER_SOURCE_BRANCH: "alphalaunder-deepseek-v4-results-v2-20260803"
+      ALPHALAUNDER_RESULT_BRANCH: "alphalaunder-paper1-consolidated-20260803"
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Reconstruct verified bootstrap
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat alphalaunder_systems_v3/bootstrap_parts/part* > /tmp/alphalaunder-systems-v3.sh
+          echo "08675dbd58bdf15dfd7ef20708de0a07b9e5ec186b865a43d2af59ab754d56ab  /tmp/alphalaunder-systems-v3.sh" | sha256sum --check --strict
+          bash -n /tmp/alphalaunder-systems-v3.sh
+
+      - name: Run credential-isolated native-system integration
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: bash /tmp/alphalaunder-systems-v3.sh
+
+      - name: Upload consolidated artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: alphalaunder-paper1-consolidated
+          path: alphalaunder_consolidated_results.zip
+          if-no-files-found: error
+          retention-days: 7
