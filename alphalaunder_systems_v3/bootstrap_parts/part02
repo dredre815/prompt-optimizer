@@ -1,0 +1,61 @@
+f-8'))
+    except Exception as e: data['runtime_read_error']=str(e)
+Path(out).write_text(json.dumps(data,indent=2),encoding='utf-8')
+PY
+}
+
+publish_results() {
+  local pub="$ROOT/publish-repo"
+  git clone --quiet "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" "$pub"
+  git -C "$pub" config user.name "alphalaunder-experiment-bot"
+  git -C "$pub" config user.email "alphalaunder-experiment-bot@users.noreply.github.com"
+  git -C "$pub" checkout --orphan "$RESULT_BRANCH"
+  git -C "$pub" rm -rf . >/dev/null 2>&1 || true
+  cp -a "$CONSOLIDATED/." "$pub/"
+  cat > "$pub/README.md" <<EOF
+# AlphaLaunder Paper 1 consolidated results
+
+- Model: \`deepseek-v4-flash\`
+- DeepSeek policy ablation and real-market results copied from \`$SOURCE_RESULT_BRANCH\`.
+- Native QuantaAlpha and RD-Agent integration rerun with missing dependencies installed.
+- QuantaAlpha commit: \`$QUANTA_COMMIT\`
+- RD-Agent commit: \`$RDAGENT_COMMIT\`
+- Plaintext credential material is not included.
+EOF
+  (cd "$pub" && zip -q -r alphalaunder_consolidated_results.zip results README.md)
+  git -C "$pub" add README.md results alphalaunder_consolidated_results.zip
+  git -C "$pub" commit -m "paper1: publish consolidated AlphaLaunder results" >/dev/null
+  git -C "$pub" push --force origin "HEAD:${RESULT_BRANCH}" >/dev/null
+  cp "$pub/alphalaunder_consolidated_results.zip" "$GITHUB_WORKSPACE/alphalaunder_consolidated_results.zip"
+}
+
+publish_completion_comment() {
+  python - "$STATUS" "$ROOT/result_comment.txt" "$RESULT_BRANCH" <<'PY'
+import json,sys
+s=json.load(open(sys.argv[1],encoding='utf-8')); branch=sys.argv[3]
+runtime=s.get('systems_runtime_status') or {}; stages=runtime.get('stages') or {}
+lines=['ALPHALAUNDER_SYSTEMS_RESULT_V1',f"nonce={s.get('nonce')}",f"runner_completed={str(bool(s.get('runner_completed'))).lower()}",f"bootstrap_exit_code={s.get('bootstrap_exit_code')}",f'result_branch={branch}']
+for name in ('model_probe','strict_artifact','quantaalpha','rdagent'):
+    lines.append(f"stage_{name}_ok={str(bool((stages.get(name) or {}).get('ok'))).lower()}")
+open(sys.argv[2],'w',encoding='utf-8').write('\n'.join(lines)+'\n')
+PY
+  comment_file "$ROOT/result_comment.txt"
+}
+
+main() {
+  publish_public_key
+  wait_for_ciphertext
+  prepare_runtime
+  local rc=0
+  set +e
+  run_systems
+  rc=$?
+  set -e
+  redact_and_scan_outputs
+  write_bootstrap_status "$rc"
+  publish_results || true
+  publish_completion_comment || true
+  return 0
+}
+
+main "$@"
