@@ -1,0 +1,74 @@
+2f713960a46b288bde00d6e631208d765860158388a7230cfd  $ROOT/systems_only.py" | sha256sum --check --strict
+  python -m py_compile "$ROOT/systems_only.py"
+
+  cat "$GITHUB_WORKSPACE"/alphalaunder_runtime/runner_parts/part* > "$ROOT/v1.py.gz.b64"
+  base64 --decode "$ROOT/v1.py.gz.b64" | gzip --decompress > "$ROOT/remote_experiment.py"
+  echo "a0e3ea5fda8cb4a6b4670ea8865f37cfee4d9f68fdf1b6ac4c576f70af617a4a  $ROOT/remote_experiment.py" | sha256sum --check --strict
+  base64 --decode "$GITHUB_WORKSPACE/alphalaunder_runtime_v2/runner.patch.gz.b64" \
+    | gzip --decompress > "$ROOT/runner.patch"
+  echo "4f6e2e1e6f48b845e94bce9291dbaf41a3aaafa572356603094cc5dc744f37e2  $ROOT/runner.patch" | sha256sum --check --strict
+  (cd "$ROOT" && patch --batch --silent -p0 < runner.patch)
+  echo "ca7c5278227bd8454da502dc685408e8f93a27f46f174e8fef06e3a1bd2545d3  $ROOT/remote_experiment.py" | sha256sum --check --strict
+
+  git -C "$GITHUB_WORKSPACE" fetch --quiet origin \
+    "refs/heads/${SOURCE_RESULT_BRANCH}:refs/remotes/origin/${SOURCE_RESULT_BRANCH}"
+  git -C "$GITHUB_WORKSPACE" archive "refs/remotes/origin/${SOURCE_RESULT_BRANCH}" results \
+    | tar -x -C "$CONSOLIDATED"
+  test -f "$RESULTS/real_temporal_summary.json"
+
+  python -m venv "$ROOT/venv"
+  # shellcheck disable=SC1091
+  source "$ROOT/venv/bin/activate"
+  python -m pip install --upgrade --quiet pip wheel setuptools
+  python -m pip install --quiet \
+    'numpy<2' 'pandas<3' scipy requests tables pyyaml \
+    pydantic-settings python-dotenv filelock loguru openai litellm \
+    scikit-learn fuzzywuzzy python-Levenshtein pyarrow rich tqdm typer fire \
+    psutil dill matplotlib networkx pandarallel docker cloudpickle joblib humanize genson randomname
+
+  git clone --quiet https://github.com/QuantaAlpha/QuantaAlpha.git "$work/QuantaAlpha"
+  git -C "$work/QuantaAlpha" checkout --quiet "$QUANTA_COMMIT"
+  git clone --quiet https://github.com/microsoft/RD-Agent.git "$work/RD-Agent"
+  git -C "$work/RD-Agent" checkout --quiet "$RDAGENT_COMMIT"
+  python -m pip install --quiet --no-deps -e "$work/RD-Agent"
+}
+
+run_systems() {
+  # shellcheck disable=SC1091
+  source "$ROOT/venv/bin/activate"
+  python "$ROOT/systems_only.py" \
+    --runtime "$ROOT/remote_experiment.py" \
+    --temporal "$RESULTS/real_temporal_summary.json" \
+    --quanta-root "$ROOT/work/QuantaAlpha" \
+    --rdagent-root "$ROOT/work/RD-Agent" \
+    --out-dir "$RESULTS" 2>&1 | tee "$LOG"
+}
+
+redact_and_scan_outputs() {
+  local key="${DEEPSEEK_API_KEY:-}"
+  python - "$CONSOLIDATED" "$key" <<'PY'
+from pathlib import Path
+import re,sys
+root=Path(sys.argv[1]); secret=sys.argv[2].encode(); pattern=re.compile(rb'sk-[A-Za-z0-9_\-]{20,}')
+for p in root.rglob('*'):
+    if not p.is_file(): continue
+    raw=p.read_bytes(); new=raw.replace(secret,b'[REDACTED_DEEPSEEK_KEY]') if secret else raw
+    new=pattern.sub(b'[REDACTED_API_KEY_PATTERN]',new)
+    if new!=raw: p.write_bytes(new)
+if secret:
+    hits=[str(p) for p in root.rglob('*') if p.is_file() and secret in p.read_bytes()]
+    if hits: raise SystemExit('credential-remnant files: '+','.join(hits))
+PY
+  unset DEEPSEEK_API_KEY
+}
+
+write_bootstrap_status() {
+  local rc="$1"
+  python - "$STATUS" "$RESULTS/systems_runtime_status.json" "$rc" "$NONCE" <<'PY'
+import json,sys
+from pathlib import Path
+out,runtime,rc,nonce=sys.argv[1:]
+data={'bootstrap_exit_code':int(rc),'nonce':nonce,'runner_completed':int(rc)==0}
+p=Path(runtime)
+if p.exists():
+    try: data['systems_runtime_status']=json.loads(p.read_text(encoding='ut
