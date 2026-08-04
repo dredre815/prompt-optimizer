@@ -4,7 +4,7 @@ on:
   push:
     paths:
       - .github/workflows/alphalaunder-fullcli.yml
-      - alphalaunder_fullcli/**
+      - alphalaunder_fullcli_v3/**
   workflow_dispatch:
 
 jobs:
@@ -15,8 +15,8 @@ jobs:
       contents: write
       issues: write
     env:
-      ALPHALAUNDER_CLI_ISSUE_NUMBER: "18"
-      ALPHALAUNDER_CLI_RESULT_BRANCH: "alphalaunder-fullcli-results-20260804"
+      ALPHALAUNDER_CLI_ISSUE_NUMBER: "19"
+      ALPHALAUNDER_CLI_RESULT_BRANCH: "alphalaunder-fullcli-v4-results-20260804"
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -30,9 +30,9 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          cat alphalaunder_fullcli/bootstrap_parts/part* > /tmp/alphalaunder-fullcli.sh.gz.b64
+          cat alphalaunder_fullcli_v3/bootstrap_parts/part* > /tmp/alphalaunder-fullcli.sh.gz.b64
           base64 --decode /tmp/alphalaunder-fullcli.sh.gz.b64 | gzip --decompress > /tmp/alphalaunder-fullcli.sh
-          echo "1ded8a5e2a5239ab39192886f942bbd12d3cf4b6f300c252c6a3c14b141f3cf5  /tmp/alphalaunder-fullcli.sh" | sha256sum --check --strict
+          echo "2b1f12171bdf2f9bbe6bd090b02940a13d63bc30cc037574374419f2dd5b9c1f  /tmp/alphalaunder-fullcli.sh" | sha256sum --check --strict
           bash -n /tmp/alphalaunder-fullcli.sh
 
       - name: Run credential-isolated complete CLI experiment
@@ -45,7 +45,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: alphalaunder-fullcli
+          name: alphalaunder-fullcli-v4
           path: alphalaunder_fullcli_artifact
           if-no-files-found: warn
           retention-days: 7
