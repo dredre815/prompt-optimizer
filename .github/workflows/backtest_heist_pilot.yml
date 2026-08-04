@@ -3,7 +3,7 @@ name: Backtest Heist DeepSeek-V4-Flash feasibility pilot
 on:
   push:
     branches:
-      - backtest-heist-disabled
+      - backtest-heist-pilot-20260804
     paths:
       - '.github/workflows/backtest_heist_pilot.yml'
       - 'backtest_heist_runtime/**'
@@ -23,6 +23,14 @@ jobs:
     steps:
       - name: Checkout isolated experiment branch
         uses: actions/checkout@v4
+
+      - name: Pin and import the reviewed v2 runtime
+        shell: bash
+        run: |
+          git fetch --no-tags --depth=1 origin backtest-heist-pilot-20260804-v2
+          git show FETCH_HEAD:backtest_heist_runtime/runner_parts/part00 > backtest_heist_runtime/runner_parts/part00
+          git show FETCH_HEAD:backtest_heist_runtime/runner_parts/part01 > backtest_heist_runtime/runner_parts/part01
+          git show FETCH_HEAD:backtest_heist_runtime/bootstrap_parts/part00 > backtest_heist_runtime/bootstrap_parts/part00
 
       - name: Reconstruct and run secure bootstrap
         shell: bash
