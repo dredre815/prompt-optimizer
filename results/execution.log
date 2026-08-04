@@ -1,0 +1,39 @@
+[policy] 50/1040
+[policy] 100/1040
+[policy] 150/1040
+[policy] 200/1040
+[policy] 250/1040
+[policy] 300/1040
+[policy] 350/1040
+[policy] 400/1040
+[policy] 450/1040
+[policy] 500/1040
+[policy] 550/1040
+[policy] 600/1040
+[policy] 650/1040
+[policy] 700/1040
+[policy] 750/1040
+[policy] 800/1040
+[policy] 850/1040
+[policy] 900/1040
+[policy] 950/1040
+[policy] 1000/1040
+[policy] 1040/1040
+[correlated-trial] 25/200
+[correlated-trial] 50/200
+[correlated-trial] 75/200
+[correlated-trial] 100/200
+[correlated-trial] 125/200
+[correlated-trial] 150/200
+[correlated-trial] 175/200
+[correlated-trial] 200/200
+{
+  "completed": false,
+  "stages": {
+    "flash_probe": true,
+    "pro_probe": true,
+    "repeated_policy_ablation": true,
+    "correlated_trial_history": true,
+    "quarantine_selective_rollback": false
+  }
+}

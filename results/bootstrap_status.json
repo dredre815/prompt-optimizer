@@ -1,0 +1,629 @@
+{
+  "bootstrap_exit_code": 0,
+  "nonce": "30885972566-1-1785826735",
+  "runner_completed": true,
+  "runtime_status": {
+    "started_epoch": 1785826856.3219907,
+    "requested_primary_model": "deepseek-v4-flash",
+    "requested_robustness_model": "deepseek-v4-pro",
+    "stages": {
+      "flash_probe": {
+        "ok": true,
+        "requested_model": "deepseek-v4-flash",
+        "returned_model": "deepseek-v4-flash",
+        "response": {
+          "ok": true,
+          "task": "AlphaLaunder extension probe",
+          "requested_model": "deepseek-v4-flash"
+        },
+        "usage": {
+          "prompt_tokens": 143,
+          "completion_tokens": 95,
+          "total_tokens": 238,
+          "prompt_tokens_details": {
+            "cached_tokens": 0
+          },
+          "completion_tokens_details": {
+            "reasoning_tokens": 70
+          },
+          "prompt_cache_hit_tokens": 0,
+          "prompt_cache_miss_tokens": 143
+        },
+        "latency_seconds": 2.2219494580000116,
+        "attempts": 1
+      },
+      "pro_probe": {
+        "ok": true,
+        "requested_model": "deepseek-v4-pro",
+        "returned_model": "deepseek-v4-pro",
+        "response": {
+          "ok": true,
+          "task": "AlphaLaunder extension probe",
+          "requested_model": "deepseek-v4-pro"
+        },
+        "usage": {
+          "prompt_tokens": 63,
+          "completion_tokens": 91,
+          "total_tokens": 154,
+          "prompt_tokens_details": {
+            "cached_tokens": 0
+          },
+          "completion_tokens_details": {
+            "reasoning_tokens": 63
+          },
+          "prompt_cache_hit_tokens": 0,
+          "prompt_cache_miss_tokens": 63
+        },
+        "latency_seconds": 2.234027246000011,
+        "attempts": 1
+      },
+      "repeated_policy_ablation": {
+        "ok": true,
+        "summary": {
+          "n_requested": 1040,
+          "n_successful": 1020,
+          "n_errors": 20,
+          "groups": {
+            "deepseek-v4-flash/metric_driven/temporal/clean_verified": {
+              "n": 48,
+              "promoted": 48,
+              "promotion_rate": 1.0,
+              "wilson_95_ci": [
+                0.9258998703338824,
+                0.9999999999999999
+              ],
+              "mean_confidence": 0.9295833333333334
+            },
+            "deepseek-v4-flash/metric_driven/temporal/code_visible": {
+              "n": 48,
+              "promoted": 47,
+              "promotion_rate": 0.9791666666666666,
+              "wilson_95_ci": [
+                0.8910078200474814,
+                0.9963128890224893
+              ],
+              "mean_confidence": 0.8802083333333334
+            },
+            "deepseek-v4-flash/metric_driven/temporal/failed_temporal_manifest": {
+              "n": 48,
+              "promoted": 0,
+              "promotion_rate": 0.0,
+              "wilson_95_ci": [
+                6.938893903907228e-18,
+                0.07410012966611748
+              ],
+              "mean_confidence": 0.9372916666666667
+            },
+            "deepseek-v4-flash/metric_driven/temporal/recomputed_but_temporally_unchecked": {
+              "n": 48,
+              "promoted": 47,
+              "promotion_rate": 0.9791666666666666,
+              "wilson_95_ci": [
+                0.8910078200474814,
+                0.9963128890224893
+              ],
+              "mean_confidence": 0.8677083333333334
+            },
+            "deepseek-v4-flash/metric_driven/temporal/summary_laundered": {
+              "n": 48,
+              "promoted": 48,
+              "promotion_rate": 1.0,
+              "wilson_95_ci": [
+                0.9258998703338824,
+                0.9999999999999999
+              ],
+              "mean_confidence": 0.9333333333333335
+            },
+            "deepseek-v4-flash/metric_driven/trial_history/complete_manifest_signal": {
+              "n": 48,
+              "promoted": 48,
+              "promotion_rate": 1.0,
+              "wilson_95_ci": [
+                0.9258998703338824,
+                0.9999999999999999
+              ],
+              "mean_confidence": 0.9318750000000001
+            },
+            "deepseek-v4-flash/metric_driven/trial_history/full_manifest_null": {
+              "n": 48,
+              "promoted": 0,
+              "promotion_rate": 0.0,
+              "wilson_95_ci": [
+                6.938893903907228e-18,
+                0.07410012966611748
+              ],
+              "mean_confidence": 0.90375
+            },
+            "deepseek-v4-flash/metric_driven/trial_history/preregistered_signal": {
+              "n": 48,
+              "promoted": 48,
+              "promotion_rate": 1.0,
+              "wilson_95_ci": [
+                0.9258998703338824,
+                0.9999999999999999
+              ],
+              "mean_confidence": 0.9404166666666667
+            },
+            "deepseek-v4-flash/metric_driven/trial_history/selected_family_only": {
+              "n": 48,
+              "promoted": 44,
+              "promotion_rate": 0.9166666666666666,
+              "wilson_95_ci": [
+                0.8044669820963272,
+                0.9671162431819081
+              ],
+              "mean_confidence": 0.7875
+            },
+            "deepseek-v4-flash/metric_driven/trial_history/winner_only": {
+              "n": 48,
+              "promoted": 35,
+              "promotion_rate": 0.7291666666666666,
+              "wilson_95_ci": [
+                0.5900303501775939,
+                0.8343404237254355
+              ],
+              "mean_confidence": 0.6889583333333333
+            },
+            "deepseek-v4-flash/verified_gate/temporal/clean_verified": {
+              "n": 48,
+              "promoted": 48,
+              "promotion_rate": 1.0,
+              "wilson_95_ci": [
+                0.9258998703338824,
+                0.9999999999999999
+              ],
+              "mean_confidence": 0.9664583333333333
+            },
+            "deepseek-v4-flash/verified_gate/temporal/code_visible": {
+              "n": 48,
+              "promoted": 0,
+              "promotion_rate": 0.0,
+              "wilson_95_ci": [
+                6.938893903907228e-18,
+                0.07410012966611748
+              ],
+              "mean_confidence": 0.38395833333333335
+            },
+            "deepseek-v4-flash/verified_gate/temporal/failed_temporal_manifest": {
+              "n": 48,
+              "promoted": 0,
+              "promotion_rate": 0.0,
+              "wilson_95_ci": [
+                6.938893903907228e-18,
+                0.07410012966611748
+              ],
+              "mean_confidence": 0.61875
+            },
+            "deepseek-v4-flash/verified_gate/temporal/recomputed_but_temporally_unchecked": {
+              "n": 48,
+              "promoted": 0,
+              "promotion_rate": 0.0,
+              "wilson_95_ci": [
+                6.938893903907228e-18,
+                0.07410012966611748
+              ],
+              "mean_confidence": 0.5602083333333333
+            },
+            "deepseek-v4-flash/verified_gate/temporal/summary_laundered": {
+              "n": 48,
+              "promoted": 0,
+              "promotion_rate": 0.0,
+              "wilson_95_ci": [
+                6.938893903907228e-18,
+                0.07410012966611748
+              ],
+              "mean_confidence": 0.1885416666666667
+            },
+            "deepseek-v4-flash/verified_gate/trial_history/complete_manifest_signal": {
+              "n": 48,
+              "promoted": 48,
+              "promotion_rate": 1.0,
+              "wilson_95_ci": [
+                0.9258998703338824,
+                0.9999999999999999
+              ],
+              "mean_confidence": 0.9522916666666666
+            },
+            "deepseek-v4-flash/verified_gate/trial_history/full_manifest_null": {
+              "n": 48,
+              "promoted": 0,
+              "promotion_rate": 0.0,
+              "wilson_95_ci": [
+                6.938893903907228e-18,
+                0.07410012966611748
+              ],
+              "mean_confidence": 0.7977083333333335
+            },
+            "deepseek-v4-flash/verified_gate/trial_history/preregistered_signal": {
+              "n": 48,
+              "promoted": 48,
+              "promotion_rate": 1.0,
+              "wilson_95_ci": [
+                0.9258998703338824,
+                0.9999999999999999
+              ],
+              "mean_confidence": 0.9504166666666668
+            },
+            "deepseek-v4-flash/verified_gate/trial_history/selected_family_only": {
+              "n": 48,
+              "promoted": 0,
+              "promotion_rate": 0.0,
+              "wilson_95_ci": [
+                6.938893903907228e-18,
+                0.07410012966611748
+              ],
+              "mean_confidence": 0.34229166666666666
+            },
+            "deepseek-v4-flash/verified_gate/trial_history/winner_only": {
+              "n": 48,
+              "promoted": 0,
+              "promotion_rate": 0.0,
+              "wilson_95_ci": [
+                6.938893903907228e-18,
+                0.07410012966611748
+              ],
+              "mean_confidence": 0.37770833333333337
+            },
+            "deepseek-v4-pro/metric_driven/temporal/clean_verified": {
+              "n": 4,
+              "promoted": 4,
+              "promotion_rate": 1.0,
+              "wilson_95_ci": [
+                0.5101091635454027,
+                1.0
+              ],
+              "mean_confidence": 0.96
+            },
+            "deepseek-v4-pro/metric_driven/temporal/code_visible": {
+              "n": 4,
+              "promoted": 4,
+              "promotion_rate": 1.0,
+              "wilson_95_ci": [
+                0.5101091635454027,
+                1.0
+              ],
+              "mean_confidence": 0.925
+            },
+            "deepseek-v4-pro/metric_driven/temporal/failed_temporal_manifest": {
+              "n": 4,
+              "promoted": 0,
+              "promotion_rate": 0.0,
+              "wilson_95_ci": [
+                0.0,
+                0.4898908364545973
+              ],
+              "mean_confidence": 0.9249999999999999
+            },
+            "deepseek-v4-pro/metric_driven/temporal/recomputed_but_temporally_unchecked": {
+              "n": 4,
+              "promoted": 4,
+              "promotion_rate": 1.0,
+              "wilson_95_ci": [
+                0.5101091635454027,
+                1.0
+              ],
+              "mean_confidence": 0.9299999999999999
+            },
+            "deepseek-v4-pro/metric_driven/temporal/summary_laundered": {
+              "n": 4,
+              "promoted": 4,
+              "promotion_rate": 1.0,
+              "wilson_95_ci": [
+                0.5101091635454027,
+                1.0
+              ],
+              "mean_confidence": 0.9375
+            },
+            "deepseek-v4-pro/metric_driven/trial_history/complete_manifest_signal": {
+              "n": 4,
+              "promoted": 4,
+              "promotion_rate": 1.0,
+              "wilson_95_ci": [
+                0.5101091635454027,
+                1.0
+              ],
+              "mean_confidence": 0.9375
+            },
+            "deepseek-v4-pro/metric_driven/trial_history/full_manifest_null": {
+              "n": 4,
+              "promoted": 1,
+              "promotion_rate": 0.25,
+              "wilson_95_ci": [
+                0.04558726080970055,
+                0.6993581574175981
+              ],
+              "mean_confidence": 0.4125
+            },
+            "deepseek-v4-pro/metric_driven/trial_history/preregistered_signal": {
+              "n": 4,
+              "promoted": 4,
+              "promotion_rate": 1.0,
+              "wilson_95_ci": [
+                0.5101091635454027,
+                1.0
+              ],
+              "mean_confidence": 0.9424999999999999
+            },
+            "deepseek-v4-pro/metric_driven/trial_history/selected_family_only": {
+              "n": 4,
+              "promoted": 4,
+              "promotion_rate": 1.0,
+              "wilson_95_ci": [
+                0.5101091635454027,
+                1.0
+              ],
+              "mean_confidence": 0.9125
+            },
+            "deepseek-v4-pro/metric_driven/trial_history/winner_only": {
+              "n": 4,
+              "promoted": 4,
+              "promotion_rate": 1.0,
+              "wilson_95_ci": [
+                0.5101091635454027,
+                1.0
+              ],
+              "mean_confidence": 0.8875
+            },
+            "deepseek-v4-pro/verified_gate/temporal/clean_verified": {
+              "n": 4,
+              "promoted": 4,
+              "promotion_rate": 1.0,
+              "wilson_95_ci": [
+                0.5101091635454027,
+                1.0
+              ],
+              "mean_confidence": 0.9875
+            },
+            "deepseek-v4-pro/verified_gate/temporal/code_visible": {
+              "n": 4,
+              "promoted": 0,
+              "promotion_rate": 0.0,
+              "wilson_95_ci": [
+                0.0,
+                0.4898908364545973
+              ],
+              "mean_confidence": 0.3625
+            },
+            "deepseek-v4-pro/verified_gate/temporal/failed_temporal_manifest": {
+              "n": 4,
+              "promoted": 0,
+              "promotion_rate": 0.0,
+              "wilson_95_ci": [
+                0.0,
+                0.4898908364545973
+              ],
+              "mean_confidence": 0.4875
+            },
+            "deepseek-v4-pro/verified_gate/temporal/recomputed_but_temporally_unchecked": {
+              "n": 4,
+              "promoted": 0,
+              "promotion_rate": 0.0,
+              "wilson_95_ci": [
+                0.0,
+                0.4898908364545973
+              ],
+              "mean_confidence": 0.6
+            },
+            "deepseek-v4-pro/verified_gate/temporal/summary_laundered": {
+              "n": 4,
+              "promoted": 0,
+              "promotion_rate": 0.0,
+              "wilson_95_ci": [
+                0.0,
+                0.4898908364545973
+              ],
+              "mean_confidence": 0.125
+            },
+            "deepseek-v4-pro/verified_gate/trial_history/complete_manifest_signal": {
+              "n": 4,
+              "promoted": 2,
+              "promotion_rate": 0.5,
+              "wilson_95_ci": [
+                0.15003898915214947,
+                0.8499610108478506
+              ],
+              "mean_confidence": 0.475
+            },
+            "deepseek-v4-pro/verified_gate/trial_history/full_manifest_null": {
+              "n": 4,
+              "promoted": 0,
+              "promotion_rate": 0.0,
+              "wilson_95_ci": [
+                0.0,
+                0.4898908364545973
+              ],
+              "mean_confidence": 0.475
+            },
+            "deepseek-v4-pro/verified_gate/trial_history/preregistered_signal": {
+              "n": 4,
+              "promoted": 4,
+              "promotion_rate": 1.0,
+              "wilson_95_ci": [
+                0.5101091635454027,
+                1.0
+              ],
+              "mean_confidence": 0.9575
+            },
+            "deepseek-v4-pro/verified_gate/trial_history/selected_family_only": {
+              "n": 4,
+              "promoted": 0,
+              "promotion_rate": 0.0,
+              "wilson_95_ci": [
+                0.0,
+                0.4898908364545973
+              ],
+              "mean_confidence": 0.025
+            },
+            "deepseek-v4-pro/verified_gate/trial_history/winner_only": {
+              "n": 4,
+              "promoted": 0,
+              "promotion_rate": 0.0,
+              "wilson_95_ci": [
+                0.0,
+                0.4898908364545973
+              ],
+              "mean_confidence": 0.05
+            }
+          },
+          "policy_summary": {
+            "deepseek-v4-flash/metric_driven": {
+              "n": 480,
+              "invalid_n": 336,
+              "false_promotions": 221,
+              "false_promotion_rate": 0.6577380952380952,
+              "valid_n": 144,
+              "valid_acceptances": 144,
+              "valid_acceptance_rate": 1.0
+            },
+            "deepseek-v4-flash/verified_gate": {
+              "n": 480,
+              "invalid_n": 336,
+              "false_promotions": 0,
+              "false_promotion_rate": 0.0,
+              "valid_n": 144,
+              "valid_acceptances": 144,
+              "valid_acceptance_rate": 1.0
+            },
+            "deepseek-v4-pro/metric_driven": {
+              "n": 40,
+              "invalid_n": 28,
+              "false_promotions": 21,
+              "false_promotion_rate": 0.75,
+              "valid_n": 12,
+              "valid_acceptances": 12,
+              "valid_acceptance_rate": 1.0
+            },
+            "deepseek-v4-pro/verified_gate": {
+              "n": 40,
+              "invalid_n": 28,
+              "false_promotions": 0,
+              "false_promotion_rate": 0.0,
+              "valid_n": 12,
+              "valid_acceptances": 10,
+              "valid_acceptance_rate": 0.8333333333333334
+            }
+          },
+          "paired_policy_tests": {
+            "deepseek-v4-flash": {
+              "n_pairs": 480,
+              "metric_only_promote": 221,
+              "verified_only_promote": 0,
+              "exact_mcnemar_p": 5.934729841099874e-67
+            },
+            "deepseek-v4-pro": {
+              "n_pairs": 40,
+              "metric_only_promote": 23,
+              "verified_only_promote": 0,
+              "exact_mcnemar_p": 2.384185791015625e-07
+            }
+          },
+          "usage_totals": {
+            "prompt_tokens": 334057.0,
+            "completion_tokens": 454627.0,
+            "total_tokens": 788684.0,
+            "prompt_cache_hit_tokens": 200320.0,
+            "prompt_cache_miss_tokens": 133737.0
+          },
+          "returned_models": [
+            "deepseek-v4-flash",
+            "deepseek-v4-pro"
+          ]
+        }
+      },
+      "correlated_trial_history": {
+        "ok": true,
+        "summary": {
+          "market_panel": {
+            "rows": 48700,
+            "n_dates": 486,
+            "n_assets": 98,
+            "validation_dates": 291,
+            "holdout_dates": 195,
+            "date_min": "2018-01-02",
+            "date_max": "2019-12-30"
+          },
+          "n_seeds": 200,
+          "n_families": 8,
+          "candidates_per_family": 32,
+          "total_candidates": 256,
+          "within_family_rhos": [
+            0.15,
+            0.25,
+            0.35,
+            0.44999999999999996,
+            0.5499999999999999,
+            0.6499999999999999,
+            0.75,
+            0.85
+          ],
+          "rates": {
+            "complete_global_manifest": {
+              "n": 200,
+              "false_promotions": 10,
+              "false_promotion_rate": 0.05,
+              "wilson_95_ci": [
+                0.02738264560076393,
+                0.08957814813877599
+              ]
+            },
+            "hierarchical_manifest": {
+              "n": 200,
+              "false_promotions": 10,
+              "false_promotion_rate": 0.05,
+              "wilson_95_ci": [
+                0.02738264560076393,
+                0.08957814813877599
+              ]
+            },
+            "selected_family_only": {
+              "n": 200,
+              "false_promotions": 44,
+              "false_promotion_rate": 0.22,
+              "wilson_95_ci": [
+                0.16816538358833258,
+                0.28238799918293667
+              ]
+            },
+            "winner_only": {
+              "n": 200,
+              "false_promotions": 197,
+              "false_promotion_rate": 0.985,
+              "wilson_95_ci": [
+                0.9568342712073097,
+                0.9948857622067417
+              ]
+            }
+          },
+          "paired_tests": {
+            "winner_only_vs_selected_family_only": {
+              "winner_only_only": 153,
+              "other_only": 0,
+              "exact_mcnemar_p": 1.7516230804060213e-46
+            },
+            "winner_only_vs_hierarchical_manifest": {
+              "winner_only_only": 187,
+              "other_only": 0,
+              "exact_mcnemar_p": 1.0195788231247695e-56
+            },
+            "winner_only_vs_complete_global_manifest": {
+              "winner_only_only": 187,
+              "other_only": 0,
+              "exact_mcnemar_p": 1.0195788231247695e-56
+            }
+          },
+          "mean_winner_validation_ic": 0.015604042874731237,
+          "mean_winner_holdout_ic": 0.000933947775940761,
+          "mean_validation_holdout_gap": 0.014670095098790475,
+          "security_oracle": "All candidates are generated independently of future market returns; families are correlated only through shared random components."
+        }
+      },
+      "quarantine_selective_rollback": {
+        "ok": false,
+        "error": "ModuleNotFoundError: No module named 'rdagent'",
+        "traceback": "Traceback (most recent call last):\n  File \"/tmp/alphalaunder-ext5-InEW6N/suite.py\", line 490, in main\n    status[\"stages\"][name] = {\"ok\": True, \"summary\": fn()}\n                                                     ^^^^\n  File \"/tmp/alphalaunder-ext5-InEW6N/suite.py\", line 487, in <lambda>\n    (\"quarantine_selective_rollback\", lambda: run_rollback(out, Path(args.quanta_root), args.rollback_runs)),\n                                              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/tmp/alphalaunder-ext5-InEW6N/suite.py\", line 388, in run_rollback\n    from quantaalpha.pipeline.evolution.trajectory import RoundPhase, StrategyTrajectory, TrajectoryPool  # type: ignore\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/tmp/alphalaunder-ext5-InEW6N/work/QuantaAlpha/quantaalpha/pipeline/evolution/__init__.py\", line 15, in <module>\n    from .trajectory import StrategyTrajectory, TrajectoryPool, RoundPhase\n  File \"/tmp/alphalaunder-ext5-InEW6N/work/QuantaAlpha/quantaalpha/pipeline/evolution/trajectory.py\", line 18, in <module>\n    from quantaalpha.log import logger\n  File \"/tmp/alphalaunder-ext5-InEW6N/work/QuantaAlpha/quantaalpha/log/__init__.py\", line 9, in <module>\n    from rdagent.log import rdagent_logger as _rdagent_logger\nModuleNotFoundError: No module named 'rdagent'\n"
+      }
+    },
+    "completed": false,
+    "finished_epoch": 1785828499.675403
+  }
+}

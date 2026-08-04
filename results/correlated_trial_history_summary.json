@@ -1,0 +1,84 @@
+{
+  "market_panel": {
+    "rows": 48700,
+    "n_dates": 486,
+    "n_assets": 98,
+    "validation_dates": 291,
+    "holdout_dates": 195,
+    "date_min": "2018-01-02",
+    "date_max": "2019-12-30"
+  },
+  "n_seeds": 200,
+  "n_families": 8,
+  "candidates_per_family": 32,
+  "total_candidates": 256,
+  "within_family_rhos": [
+    0.15,
+    0.25,
+    0.35,
+    0.44999999999999996,
+    0.5499999999999999,
+    0.6499999999999999,
+    0.75,
+    0.85
+  ],
+  "rates": {
+    "complete_global_manifest": {
+      "n": 200,
+      "false_promotions": 10,
+      "false_promotion_rate": 0.05,
+      "wilson_95_ci": [
+        0.02738264560076393,
+        0.08957814813877599
+      ]
+    },
+    "hierarchical_manifest": {
+      "n": 200,
+      "false_promotions": 10,
+      "false_promotion_rate": 0.05,
+      "wilson_95_ci": [
+        0.02738264560076393,
+        0.08957814813877599
+      ]
+    },
+    "selected_family_only": {
+      "n": 200,
+      "false_promotions": 44,
+      "false_promotion_rate": 0.22,
+      "wilson_95_ci": [
+        0.16816538358833258,
+        0.28238799918293667
+      ]
+    },
+    "winner_only": {
+      "n": 200,
+      "false_promotions": 197,
+      "false_promotion_rate": 0.985,
+      "wilson_95_ci": [
+        0.9568342712073097,
+        0.9948857622067417
+      ]
+    }
+  },
+  "paired_tests": {
+    "winner_only_vs_selected_family_only": {
+      "winner_only_only": 153,
+      "other_only": 0,
+      "exact_mcnemar_p": 1.7516230804060213e-46
+    },
+    "winner_only_vs_hierarchical_manifest": {
+      "winner_only_only": 187,
+      "other_only": 0,
+      "exact_mcnemar_p": 1.0195788231247695e-56
+    },
+    "winner_only_vs_complete_global_manifest": {
+      "winner_only_only": 187,
+      "other_only": 0,
+      "exact_mcnemar_p": 1.0195788231247695e-56
+    }
+  },
+  "mean_winner_validation_ic": 0.015604042874731237,
+  "mean_winner_holdout_ic": 0.000933947775940761,
+  "mean_validation_holdout_gap": 0.014670095098790475,
+  "security_oracle": "All candidates are generated independently of future market returns; families are correlated only through shared random components."
+}
