@@ -1,4 +1,4 @@
-name: Backtest Heist PR DeepSeek-V4-Flash pilot v2
+name: Backtest Heist PR DeepSeek-V4-Flash pilot v3
 
 on:
   pull_request:
@@ -19,20 +19,24 @@ jobs:
     timeout-minutes: 180
     env:
       BACKTEST_HEIST_ISSUE_NUMBER: '14'
-      BACKTEST_HEIST_RESULT_BRANCH: backtest-heist-results-20260804-v2
-      FIXED_RUNTIME_COMMIT: '67063796b081c7899f9e9b869cbb707df709b4f2'
+      BACKTEST_HEIST_RESULT_BRANCH: backtest-heist-results-20260804-v3
+      FIXED_BOOTSTRAP_COMMIT: '67063796b081c7899f9e9b869cbb707df709b4f2'
+      FIXED_RUNNER_COMMIT: '4f933174d82124ecccfcaf0117d8b520cb447cee'
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Import the immutable v2 runtime
+      - name: Import immutable bootstrap and verified runner chunks
         shell: bash
         run: |
-          git fetch --no-tags --depth=1 origin "$FIXED_RUNTIME_COMMIT"
+          git fetch --no-tags --depth=1 origin "$FIXED_BOOTSTRAP_COMMIT"
+          git fetch --no-tags --depth=1 origin "$FIXED_RUNNER_COMMIT"
+          rm -rf backtest_heist_runtime
           mkdir -p backtest_heist_runtime/runner_parts backtest_heist_runtime/bootstrap_parts
-          git show "$FIXED_RUNTIME_COMMIT":backtest_heist_runtime/runner_parts/part00 > backtest_heist_runtime/runner_parts/part00
-          git show "$FIXED_RUNTIME_COMMIT":backtest_heist_runtime/runner_parts/part01 > backtest_heist_runtime/runner_parts/part01
-          git show "$FIXED_RUNTIME_COMMIT":backtest_heist_runtime/bootstrap_parts/part00 > backtest_heist_runtime/bootstrap_parts/part00
+          git show "$FIXED_BOOTSTRAP_COMMIT":backtest_heist_runtime/bootstrap_parts/part00 > backtest_heist_runtime/bootstrap_parts/part00
+          for p in 00 01 02 03 04 05 06 07; do
+            git show "$FIXED_RUNNER_COMMIT":backtest_heist_runtime/runner_parts/part${p} > backtest_heist_runtime/runner_parts/part${p}
+          done
 
       - name: Reconstruct and run secure bootstrap
         shell: bash
