@@ -1,0 +1,1 @@
+The Backtest Heist pilot uses an ephemeral RSA-OAEP handshake through issue #13. No plaintext credential is committed to this repository.
