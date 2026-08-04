@@ -1,0 +1,44 @@
+name: Backtest Heist DeepSeek-V4-Flash feasibility pilot
+
+on:
+  push:
+    branches:
+      - backtest-heist-pilot-20260804
+    paths:
+      - '.github/workflows/backtest_heist_pilot.yml'
+      - 'backtest_heist_runtime/**'
+
+permissions:
+  contents: write
+  issues: write
+  actions: read
+
+jobs:
+  pilot:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    env:
+      BACKTEST_HEIST_ISSUE_NUMBER: '13'
+      BACKTEST_HEIST_RESULT_BRANCH: backtest-heist-results-20260804
+    steps:
+      - name: Checkout isolated experiment branch
+        uses: actions/checkout@v4
+
+      - name: Reconstruct and run secure bootstrap
+        shell: bash
+        run: |
+          cat backtest_heist_runtime/bootstrap_parts/part* > /tmp/backtest_heist_bootstrap.sh
+          echo "bc9f72590d0dc5b0bebdd2934d5584501127e1488411b28c8ef85c17531f479a  /tmp/backtest_heist_bootstrap.sh" | sha256sum --check --strict
+          chmod 700 /tmp/backtest_heist_bootstrap.sh
+          /tmp/backtest_heist_bootstrap.sh
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload non-secret experiment artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: backtest-heist-results-${{ github.run_id }}
+          path: backtest_heist_runtime/output
+          if-no-files-found: warn
+          retention-days: 14
