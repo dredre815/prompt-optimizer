@@ -1,0 +1,247 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+umask 077
+
+ISSUE_NUMBER="${BACKTEST_HEIST_ISSUE_NUMBER:-14}"
+RESULT_BRANCH="${BACKTEST_HEIST_RESULT_BRANCH:-backtest-heist-results-20260804-v2}"
+NONCE="${GITHUB_RUN_ID:-local}-${GITHUB_RUN_ATTEMPT:-1}-$(date +%s)"
+ROOT="$(mktemp -d /tmp/backtest-heist-XXXXXX)"
+PRIVATE_KEY="$ROOT/private.pem"
+PUBLIC_KEY="$ROOT/public.pem"
+CIPHERTEXT_B64="$ROOT/ciphertext.b64"
+CIPHERTEXT_BIN="$ROOT/ciphertext.bin"
+CIPHERTEXT_COMMENT_ID="$ROOT/ciphertext_comment_id"
+PLAINTEXT_KEY="$ROOT/deepseek_key.txt"
+RESULTS="$GITHUB_WORKSPACE/backtest_heist_runtime/output"
+STATUS="$RESULTS/bootstrap_status.json"
+LOG="$RESULTS/execution.log"
+mkdir -p "$RESULTS"
+rm -rf "$RESULTS"/*
+
+cleanup() {
+  set +e
+  unset DEEPSEEK_API_KEY
+  for f in "$PLAINTEXT_KEY" "$CIPHERTEXT_BIN" "$CIPHERTEXT_B64" "$PRIVATE_KEY" "$PUBLIC_KEY"; do
+    if [ -f "$f" ]; then
+      shred -u "$f" 2>/dev/null || rm -f "$f"
+    fi
+  done
+  rm -rf "$ROOT/venv" "$ROOT/publish-repo" 2>/dev/null || true
+}
+trap cleanup EXIT
+
+comment_file() {
+  local file="$1"
+  GH_TOKEN="$GITHUB_TOKEN" gh issue comment "$ISSUE_NUMBER" \
+    --repo "$GITHUB_REPOSITORY" --body-file "$file" >/dev/null
+}
+
+publish_public_key() {
+  openssl genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:4096 \
+    -out "$PRIVATE_KEY" 2>/dev/null
+  openssl pkey -in "$PRIVATE_KEY" -pubout -out "$PUBLIC_KEY"
+  {
+    echo "BACKTEST_HEIST_PUBLIC_KEY_V1"
+    echo "nonce=$NONCE"
+    echo "run_id=${GITHUB_RUN_ID:-unknown}"
+    echo "requested_model=deepseek-v4-flash"
+    echo "The private key exists only in this ephemeral GitHub Actions process."
+    echo "BACKTEST_HEIST_PUBLIC_KEY_BEGIN"
+    cat "$PUBLIC_KEY"
+    echo "BACKTEST_HEIST_PUBLIC_KEY_END"
+  } > "$ROOT/public_comment.txt"
+  comment_file "$ROOT/public_comment.txt"
+}
+
+extract_ciphertext() {
+  GH_TOKEN="$GITHUB_TOKEN" gh api \
+    "repos/${GITHUB_REPOSITORY}/issues/${ISSUE_NUMBER}/comments?per_page=100" \
+    --paginate > "$ROOT/comments.json"
+  python - "$ROOT/comments.json" "$NONCE" "$CIPHERTEXT_B64" "$CIPHERTEXT_COMMENT_ID" <<'PY'
+import json, re, sys
+source, nonce, out, id_out = sys.argv[1:]
+comments = json.load(open(source, encoding="utf-8"))
+pat = re.compile(
+    r"BACKTEST_HEIST_CIPHERTEXT_V1\s*\n"
+    + r"nonce=" + re.escape(nonce) + r"\s*\n"
+    + r"BACKTEST_HEIST_CIPHERTEXT_BEGIN\s*\n(.*?)\nBACKTEST_HEIST_CIPHERTEXT_END",
+    re.S,
+)
+for item in reversed(comments):
+    m = pat.search(item.get("body") or "")
+    if m:
+        data = "".join(m.group(1).split())
+        open(out, "w", encoding="ascii").write(data + "\n")
+        open(id_out, "w", encoding="ascii").write(str(item.get("id")) + "\n")
+        raise SystemExit(0)
+raise SystemExit(1)
+PY
+}
+
+wait_for_ciphertext() {
+  local found=0
+  for _ in $(seq 1 360); do
+    if extract_ciphertext 2>/dev/null; then
+      found=1
+      break
+    fi
+    sleep 5
+  done
+  if [ "$found" -ne 1 ]; then
+    echo "Timed out waiting for encrypted credential" >&2
+    return 2
+  fi
+  base64 --decode "$CIPHERTEXT_B64" > "$CIPHERTEXT_BIN"
+  openssl pkeyutl -decrypt \
+    -inkey "$PRIVATE_KEY" \
+    -in "$CIPHERTEXT_BIN" \
+    -out "$PLAINTEXT_KEY" \
+    -pkeyopt rsa_padding_mode:oaep \
+    -pkeyopt rsa_oaep_md:sha256
+  local key
+  key="$(cat "$PLAINTEXT_KEY")"
+  if [[ "$key" != sk-* ]]; then
+    echo "Decrypted payload does not match the expected API-key format" >&2
+    return 3
+  fi
+  echo "::add-mask::$key"
+  export DEEPSEEK_API_KEY="$key"
+  shred -u "$PLAINTEXT_KEY" 2>/dev/null || rm -f "$PLAINTEXT_KEY"
+  if [ -s "$CIPHERTEXT_COMMENT_ID" ]; then
+    local cid
+    cid="$(cat "$CIPHERTEXT_COMMENT_ID")"
+    GH_TOKEN="$GITHUB_TOKEN" gh api -X DELETE \
+      "repos/${GITHUB_REPOSITORY}/issues/comments/${cid}" >/dev/null 2>&1 || true
+  fi
+}
+
+prepare_runtime() {
+  cat "$GITHUB_WORKSPACE"/backtest_heist_runtime/runner_parts/part* > "$ROOT/runner.py.gz.b64"
+  base64 --decode "$ROOT/runner.py.gz.b64" | gzip --decompress > "$ROOT/pilot.py"
+  echo "e3c5237e29fdcfdf954d45b59743def025095fbf1e5058a12846c5ff53a03a99  $ROOT/pilot.py" | sha256sum --check --strict
+  python -m py_compile "$ROOT/pilot.py"
+  python -m venv "$ROOT/venv"
+  source "$ROOT/venv/bin/activate"
+  python -m pip install --upgrade --quiet pip wheel setuptools
+  python -m pip install --quiet \
+    'httpx==0.28.1' 'matplotlib==3.10.3' 'numpy==2.2.6' \
+    'pandas==2.2.3' 'scikit-learn==1.6.1' 'scipy==1.15.3' 'tabulate==0.9.0'
+}
+
+run_experiment() {
+  source "$ROOT/venv/bin/activate"
+  python "$ROOT/pilot.py" \
+    --outdir "$RESULTS" \
+    --seed 17 \
+    --rounds 4 \
+    --candidates-per-role 4 \
+    --require-real \
+    2>&1 | tee "$LOG"
+}
+
+redact_and_scan_outputs() {
+  local key="${DEEPSEEK_API_KEY:-}"
+  python - "$RESULTS" "$key" <<'PY'
+from pathlib import Path
+import re, sys
+root = Path(sys.argv[1])
+secret = sys.argv[2].encode()
+pattern = re.compile(rb"sk-[A-Za-z0-9_\-]{20,}")
+for p in root.rglob("*"):
+    if not p.is_file():
+        continue
+    raw = p.read_bytes()
+    new = raw.replace(secret, b"[REDACTED_DEEPSEEK_KEY]") if secret else raw
+    new = pattern.sub(b"[REDACTED_API_KEY_PATTERN]", new)
+    if new != raw:
+        p.write_bytes(new)
+if secret:
+    hits = [str(p) for p in root.rglob("*") if p.is_file() and secret in p.read_bytes()]
+    if hits:
+        raise SystemExit("credential-remnant files: " + ",".join(hits))
+PY
+  unset DEEPSEEK_API_KEY
+}
+
+write_bootstrap_status() {
+  local rc="$1"
+  python - "$STATUS" "$RESULTS/summary.json" "$rc" "$NONCE" <<'PY'
+import json, sys
+from pathlib import Path
+out_path, summary_path, rc, nonce = sys.argv[1:]
+out = {"bootstrap_exit_code": int(rc), "nonce": nonce, "runner_completed": int(rc) == 0}
+p = Path(summary_path)
+if p.exists():
+    try:
+        s = json.loads(p.read_text(encoding="utf-8"))
+        out["verdict"] = ((s.get("verdict") or {}).get("verdict"))
+        out["api_usage"] = s.get("api_usage")
+        out["real_data_error"] = s.get("real_data_error")
+    except Exception as exc:
+        out["summary_read_error"] = str(exc)
+Path(out_path).write_text(json.dumps(out, indent=2), encoding="utf-8")
+PY
+}
+
+publish_results() {
+  local pub="$ROOT/publish-repo"
+  git clone --quiet "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" "$pub"
+  git -C "$pub" config user.name "backtest-heist-experiment-bot"
+  git -C "$pub" config user.email "backtest-heist-experiment-bot@users.noreply.github.com"
+  git -C "$pub" checkout --orphan "$RESULT_BRANCH"
+  git -C "$pub" rm -rf . >/dev/null 2>&1 || true
+  mkdir -p "$pub/results"
+  cp -a "$RESULTS/." "$pub/results/"
+  (cd "$RESULTS" && zip -q -r "$pub/backtest_heist_results.zip" .)
+  cat > "$pub/README.md" <<EOF
+# Backtest Heist DeepSeek-V4-Flash feasibility pilot
+
+- Requested model: \`deepseek-v4-flash\`
+- Coordination issue: #$ISSUE_NUMBER
+- GitHub Actions run: \`${GITHUB_RUN_ID:-unknown}\`
+- Plaintext credential material is not included.
+- Historical/synthetic security experiments only; no live orders or real capital.
+EOF
+  git -C "$pub" add README.md results backtest_heist_results.zip
+  git -C "$pub" commit -m "research: publish Backtest Heist feasibility results" >/dev/null
+  git -C "$pub" push --force origin "HEAD:${RESULT_BRANCH}" >/dev/null
+}
+
+publish_completion_comment() {
+  python - "$STATUS" "$ROOT/result_comment.txt" "$RESULT_BRANCH" <<'PY'
+import json, sys
+s = json.load(open(sys.argv[1], encoding="utf-8"))
+branch = sys.argv[3]
+lines = [
+    "BACKTEST_HEIST_RESULT_V1",
+    f"nonce={s.get('nonce')}",
+    f"runner_completed={str(bool(s.get('runner_completed'))).lower()}",
+    f"bootstrap_exit_code={s.get('bootstrap_exit_code')}",
+    f"run_id={__import__('os').environ.get('GITHUB_RUN_ID')}",
+    f"result_branch={branch}",
+    f"verdict={s.get('verdict')}",
+    f"real_data_error={s.get('real_data_error')}",
+]
+open(sys.argv[2], "w", encoding="utf-8").write("\n".join(lines) + "\n")
+PY
+  comment_file "$ROOT/result_comment.txt"
+  GH_TOKEN="$GITHUB_TOKEN" gh issue close "$ISSUE_NUMBER" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1 || true
+}
+
+main() {
+  publish_public_key
+  wait_for_ciphertext
+  prepare_runtime
+  local rc=0
+  set +e
+  run_experiment
+  rc=$?
+  set -e
+  redact_and_scan_outputs
+  write_bootstrap_status "$rc"
+  publish_results || true
+  publish_completion_comment || true
+  return 0
+}
+
+main "$@"
