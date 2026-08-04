@@ -1,0 +1,22 @@
+Traceback (most recent call last):
+  File "/tmp/backtest-heist-eHC4D1/pilot.py", line 1343, in <module>
+    raise SystemExit(main())
+                     ^^^^^^
+  File "/tmp/backtest-heist-eHC4D1/pilot.py", line 1339, in main
+    return asyncio.run(main_async(args))
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/asyncio/runners.py", line 194, in run
+    return runner.run(main)
+           ^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/asyncio/runners.py", line 118, in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/asyncio/base_events.py", line 687, in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+  File "/tmp/backtest-heist-eHC4D1/pilot.py", line 1255, in main_async
+    datasets.append(build_real_dataset(outdir / "market_cache"))
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/tmp/backtest-heist-eHC4D1/pilot.py", line 332, in build_real_dataset
+    raise RuntimeError(f"Insufficient real symbols ({len(frames)}); failures={failures}")
+RuntimeError: Insufficient real symbols (0); failures={'DBA': 'RuntimeError: Yahoo failed (HTTP Error 429: Too Many Requests); Stooq failed (empty or malformed Stooq response)', 'DBB': 'RuntimeError: Yahoo failed (HTTP Error 429: Too Many Requests); Stooq failed (empty or malformed Stooq response)', 'EEM': 'RuntimeError: Yahoo failed (HTTP Error 429: Too Many Requests); Stooq failed (empty or malformed Stooq response)', 'EFA': 'RuntimeError: Yahoo failed (HTTP Error 429: Too Many Requests); Stooq failed (empty or malformed Stooq response)', 'GLD': 'RuntimeError: Yahoo failed (HTTP Error 429: Too Many Requests); Stooq failed (empty or malformed Stooq response)', 'HYG': 'RuntimeError: Yahoo failed (HTTP Error 429: Too Many Requests); Stooq failed (empty or malformed Stooq response)', 'IEF': 'RuntimeError: Yahoo failed (HTTP Error 429: Too Many Requests); Stooq failed (empty or malformed Stooq response)', 'IWM': 'RuntimeError: Yahoo failed (HTTP Error 429: Too Many Requests); Stooq failed (empty or malformed Stooq response)', 'LQD': 'RuntimeError: Yahoo failed (HTTP Error 429: Too Many Requests); Stooq failed (empty or malformed Stooq response)', 'QQQ': 'RuntimeError: Yahoo failed (HTTP Error 429: Too Many Requests); Stooq failed (empty or malformed Stooq response)', 'SLV': 'RuntimeError: Yahoo failed (HTTP Error 429: Too Many Requests); Stooq failed (empty or malformed Stooq response)', 'SPY': 'RuntimeError: Yahoo failed (HTTP Error 429: Too Many Requests); Stooq failed (empty or malformed Stooq response)', 'TLT': 'RuntimeError: Yahoo failed (HTTP Error 429: Too Many Requests); Stooq failed (empty or malformed Stooq response)', 'USO': 'RuntimeError: Yahoo failed (HTTP Error 429: Too Many Requests); Stooq failed (empty or malformed Stooq response)', 'UUP': 'RuntimeError: Yahoo failed (HTTP Error 429: Too Many Requests); Stooq failed (empty or malformed Stooq response)', 'VNQ': 'RuntimeError: Yahoo failed (HTTP Error 429: Too Many Requests); Stooq failed (empty or malformed Stooq response)', 'XLE': 'RuntimeError: Yahoo failed (HTTP Error 429: Too Many Requests); Stooq failed (empty or malformed Stooq response)', 'XLF': 'RuntimeError: Yahoo failed (HTTP Error 429: Too Many Requests); Stooq failed (empty or malformed Stooq response)', 'XLI': 'RuntimeError: Yahoo failed (HTTP Error 429: Too Many Requests); Stooq failed (empty or malformed Stooq response)', 'XLK': 'RuntimeError: Yahoo failed (HTTP Error 429: Too Many Requests); Stooq failed (empty or malformed Stooq response)', 'XLP': 'RuntimeError: Yahoo failed (HTTP Error 429: Too Many Requests); Stooq failed (empty or malformed Stooq response)', 'XLU': 'RuntimeError: Yahoo failed (HTTP Error 429: Too Many Requests); Stooq failed (empty or malformed Stooq response)', 'XLV': 'RuntimeError: Yahoo failed (HTTP Error 429: Too Many Requests); Stooq failed (empty or malformed Stooq response)', 'XLY': 'RuntimeError: Yahoo failed (HTTP Error 429: Too Many Requests); Stooq failed (empty or malformed Stooq response)'}
