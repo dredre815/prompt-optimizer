@@ -20,82 +20,49 @@ jobs:
     env:
       BACKTEST_HEIST_ISSUE_NUMBER: '16'
       BACKTEST_HEIST_RESULT_BRANCH: backtest-heist-results-20260804-v4
-      FIXED_RUNTIME_COMMIT: '6cf312d8f731206e6c88cde45672d18e3aca97fa'
       BACKTEST_HEIST_REAL_DATA_PATH: '/tmp/backtest-heist-data/all_stocks_5yr.csv'
+      PINNED_DATA_COMMIT: '23045d5b0398ccf5de2d7eb8cc9c3e96d05fff90'
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Import immutable v4 runtime
+      - name: Import the reviewed v4 runtime
         shell: bash
         run: |
-          git fetch --no-tags --depth=1 origin "$FIXED_RUNTIME_COMMIT"
+          set -Eeuo pipefail
+          git fetch --no-tags --depth=1 origin backtest-heist-runtime-v4
+          RUNTIME_COMMIT="$(git rev-parse FETCH_HEAD)"
+          echo "RUNTIME_COMMIT=$RUNTIME_COMMIT" >> "$GITHUB_ENV"
           rm -rf backtest_heist_runtime
           mkdir -p backtest_heist_runtime/runner_parts backtest_heist_runtime/bootstrap_parts
-          git show "$FIXED_RUNTIME_COMMIT":backtest_heist_runtime/bootstrap_parts/part00 > backtest_heist_runtime/bootstrap_parts/part00
+          git show "$RUNTIME_COMMIT":backtest_heist_runtime/bootstrap_parts/part00 > backtest_heist_runtime/bootstrap_parts/part00
           for p in 00 01 02 03 04 05 06; do
-            git show "$FIXED_RUNTIME_COMMIT":backtest_heist_runtime/runner_parts/part${p} > backtest_heist_runtime/runner_parts/part${p}
+            git show "$RUNTIME_COMMIT":backtest_heist_runtime/runner_parts/part${p} > backtest_heist_runtime/runner_parts/part${p}
           done
 
-      - name: Download and validate pinned S&P 500 snapshot
+      - name: Download and validate pinned CC0 S&P 500 snapshot
         shell: bash
         run: |
           set -Eeuo pipefail
           DATA_DIR=/tmp/backtest-heist-data
-          ZIP="$DATA_DIR/sandp500-v4.zip"
           CSV="$DATA_DIR/all_stocks_5yr.csv"
           mkdir -p "$DATA_DIR"
-          rm -f "$ZIP" "$CSV"
-
-          downloaded=0
-          for URL in \
-            'https://www.kaggle.com/api/v1/datasets/download/camnugent/sandp500/4' \
-            'https://www.kaggle.com/api/v1/datasets/download/camnugent/sandp500'; do
-            rm -f "$ZIP"
-            if curl --fail --location --retry 4 --retry-all-errors --connect-timeout 30 \
-                --user-agent 'backtest-heist-research-pilot/1.0' \
-                "$URL" -o "$ZIP" && unzip -t "$ZIP"; then
-              downloaded=1
-              break
-            fi
-          done
-
-          if [ "$downloaded" -eq 1 ]; then
-            unzip -j -o "$ZIP" 'all_stocks_5yr.csv' -d "$DATA_DIR"
-          else
-            python -m pip install --quiet 'kagglehub==0.3.13'
-            python - <<'PY'
-          import shutil
-          from pathlib import Path
-          import kagglehub
-          out = Path('/tmp/backtest-heist-data')
-          resolved = Path(kagglehub.dataset_download(
-              'camnugent/sandp500/versions/4',
-              path='all_stocks_5yr.csv',
-              output_dir=str(out),
-              force_download=True,
-          ))
-          candidates = [resolved] if resolved.is_file() else list(out.rglob('all_stocks_5yr.csv'))
-          if not candidates:
-              raise FileNotFoundError('kagglehub did not return all_stocks_5yr.csv')
-          source = candidates[0]
-          target = out / 'all_stocks_5yr.csv'
-          if source.resolve() != target.resolve():
-              shutil.copy2(source, target)
-          print(f'kagglehub source={source}')
-          PY
-          fi
-
+          URL="https://raw.githubusercontent.com/CNuge/kaggle-code/${PINNED_DATA_COMMIT}/stock_data/all_stocks_5yr.csv"
+          curl --fail --location --retry 8 --retry-all-errors --connect-timeout 30 \
+            --user-agent 'backtest-heist-research-pilot/1.0' \
+            "$URL" -o "$CSV"
           python - <<'PY'
-          import hashlib, json
+          import hashlib, json, os
           from pathlib import Path
           import pandas as pd
           p = Path('/tmp/backtest-heist-data/all_stocks_5yr.csv')
           raw = p.read_bytes()
           df = pd.read_csv(p, usecols=['date','open','high','low','close','volume','Name'])
           meta = {
-              'dataset': 'camnugent/sandp500',
-              'dataset_version': 4,
+              'source_repository': 'CNuge/kaggle-code',
+              'source_commit': os.environ['PINNED_DATA_COMMIT'],
+              'upstream_dataset': 'camnugent/sandp500',
+              'upstream_version': 4,
               'license': 'CC0-1.0',
               'file': p.name,
               'sha256': hashlib.sha256(raw).hexdigest(),
@@ -103,9 +70,12 @@ jobs:
               'tickers': int(df['Name'].nunique()),
               'date_min': str(df['date'].min()),
               'date_max': str(df['date'].max()),
+              'runtime_commit': os.environ.get('RUNTIME_COMMIT'),
           }
           assert meta['rows'] > 500_000, meta
           assert meta['tickers'] > 400, meta
+          assert meta['date_min'] == '2013-02-08', meta
+          assert meta['date_max'] == '2018-02-07', meta
           Path('/tmp/backtest-heist-data/snapshot_metadata.json').write_text(
               json.dumps(meta, indent=2), encoding='utf-8')
           print(json.dumps(meta, indent=2))
