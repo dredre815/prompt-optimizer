@@ -1,0 +1,52 @@
+name: Backtest Heist ephemeral DeepSeek-V4-Flash pilot v2
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/backtest_heist_ephemeral_v2.yml'
+
+permissions:
+  contents: write
+  issues: write
+  actions: read
+
+jobs:
+  pilot:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    env:
+      BACKTEST_HEIST_ISSUE_NUMBER: '14'
+      BACKTEST_HEIST_RESULT_BRANCH: backtest-heist-results-20260804-v2
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Import the fixed v2 runtime from the isolated branch
+        shell: bash
+        run: |
+          git fetch --no-tags --depth=1 origin backtest-heist-pilot-20260804-v2
+          mkdir -p backtest_heist_runtime/runner_parts backtest_heist_runtime/bootstrap_parts
+          git show FETCH_HEAD:backtest_heist_runtime/runner_parts/part00 > backtest_heist_runtime/runner_parts/part00
+          git show FETCH_HEAD:backtest_heist_runtime/runner_parts/part01 > backtest_heist_runtime/runner_parts/part01
+          git show FETCH_HEAD:backtest_heist_runtime/bootstrap_parts/part00 > backtest_heist_runtime/bootstrap_parts/part00
+
+      - name: Reconstruct and run secure bootstrap
+        shell: bash
+        run: |
+          cat backtest_heist_runtime/bootstrap_parts/part* > /tmp/backtest_heist_bootstrap.sh
+          echo "4dd144c46f280d84193f9ce689972880125a000b14d7a17315415ebb2a90e244  /tmp/backtest_heist_bootstrap.sh" | sha256sum --check --strict
+          chmod 700 /tmp/backtest_heist_bootstrap.sh
+          /tmp/backtest_heist_bootstrap.sh
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload non-secret experiment artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: backtest-heist-results-${{ github.run_id }}
+          path: backtest_heist_runtime/output
+          if-no-files-found: warn
+          retention-days: 14
