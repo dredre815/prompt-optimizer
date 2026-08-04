@@ -3,7 +3,7 @@ name: Backtest Heist DeepSeek-V4-Flash feasibility pilot
 on:
   push:
     branches:
-      - backtest-heist-pilot-20260804
+      - backtest-heist-disabled
     paths:
       - '.github/workflows/backtest_heist_pilot.yml'
       - 'backtest_heist_runtime/**'
@@ -18,8 +18,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 180
     env:
-      BACKTEST_HEIST_ISSUE_NUMBER: '13'
-      BACKTEST_HEIST_RESULT_BRANCH: backtest-heist-results-20260804
+      BACKTEST_HEIST_ISSUE_NUMBER: '14'
+      BACKTEST_HEIST_RESULT_BRANCH: backtest-heist-results-20260804-v2
     steps:
       - name: Checkout isolated experiment branch
         uses: actions/checkout@v4
@@ -28,7 +28,7 @@ jobs:
         shell: bash
         run: |
           cat backtest_heist_runtime/bootstrap_parts/part* > /tmp/backtest_heist_bootstrap.sh
-          echo "bc9f72590d0dc5b0bebdd2934d5584501127e1488411b28c8ef85c17531f479a  /tmp/backtest_heist_bootstrap.sh" | sha256sum --check --strict
+          echo "4dd144c46f280d84193f9ce689972880125a000b14d7a17315415ebb2a90e244  /tmp/backtest_heist_bootstrap.sh" | sha256sum --check --strict
           chmod 700 /tmp/backtest_heist_bootstrap.sh
           /tmp/backtest_heist_bootstrap.sh
         env:
