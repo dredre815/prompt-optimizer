@@ -1,22 +1,21 @@
 name: AlphaLaunder Complete QuantaAlpha CLI Experiment
 
 on:
-  push:
-    paths:
-      - .github/workflows/alphalaunder-fullcli.yml
-      - alphalaunder_fullcli_v3/**
+  issues:
+    types: [opened]
   workflow_dispatch:
 
 jobs:
   run-fullcli:
+    if: github.event_name == 'workflow_dispatch' || contains(github.event.issue.title, 'AlphaLaunder FullCLI Trigger V5')
     runs-on: ubuntu-latest
     timeout-minutes: 300
     permissions:
       contents: write
       issues: write
     env:
-      ALPHALAUNDER_CLI_ISSUE_NUMBER: "19"
-      ALPHALAUNDER_CLI_RESULT_BRANCH: "alphalaunder-fullcli-v4-results-20260804"
+      ALPHALAUNDER_CLI_ISSUE_NUMBER: "20"
+      ALPHALAUNDER_CLI_RESULT_BRANCH: "alphalaunder-fullcli-v5-results-20260804"
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -45,7 +44,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: alphalaunder-fullcli-v4
+          name: alphalaunder-fullcli-v5
           path: alphalaunder_fullcli_artifact
           if-no-files-found: warn
           retention-days: 7
