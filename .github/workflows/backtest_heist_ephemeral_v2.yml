@@ -41,14 +41,51 @@ jobs:
         shell: bash
         run: |
           set -Eeuo pipefail
-          mkdir -p /tmp/backtest-heist-data
-          URL='https://www.kaggle.com/api/v1/datasets/download/camnugent/sandp500?datasetVersionNumber=4'
-          curl --fail --location --retry 6 --retry-all-errors --connect-timeout 30 \
-            --user-agent 'backtest-heist-research-pilot/1.0' \
-            "$URL" -o /tmp/backtest-heist-data/sandp500-v4.zip
-          unzip -t /tmp/backtest-heist-data/sandp500-v4.zip
-          unzip -j -o /tmp/backtest-heist-data/sandp500-v4.zip 'all_stocks_5yr.csv' \
-            -d /tmp/backtest-heist-data
+          DATA_DIR=/tmp/backtest-heist-data
+          ZIP="$DATA_DIR/sandp500-v4.zip"
+          CSV="$DATA_DIR/all_stocks_5yr.csv"
+          mkdir -p "$DATA_DIR"
+          rm -f "$ZIP" "$CSV"
+
+          downloaded=0
+          for URL in \
+            'https://www.kaggle.com/api/v1/datasets/download/camnugent/sandp500/4' \
+            'https://www.kaggle.com/api/v1/datasets/download/camnugent/sandp500'; do
+            rm -f "$ZIP"
+            if curl --fail --location --retry 4 --retry-all-errors --connect-timeout 30 \
+                --user-agent 'backtest-heist-research-pilot/1.0' \
+                "$URL" -o "$ZIP" && unzip -t "$ZIP"; then
+              downloaded=1
+              break
+            fi
+          done
+
+          if [ "$downloaded" -eq 1 ]; then
+            unzip -j -o "$ZIP" 'all_stocks_5yr.csv' -d "$DATA_DIR"
+          else
+            python -m pip install --quiet 'kagglehub==0.3.13'
+            python - <<'PY'
+          import shutil
+          from pathlib import Path
+          import kagglehub
+          out = Path('/tmp/backtest-heist-data')
+          resolved = Path(kagglehub.dataset_download(
+              'camnugent/sandp500/versions/4',
+              path='all_stocks_5yr.csv',
+              output_dir=str(out),
+              force_download=True,
+          ))
+          candidates = [resolved] if resolved.is_file() else list(out.rglob('all_stocks_5yr.csv'))
+          if not candidates:
+              raise FileNotFoundError('kagglehub did not return all_stocks_5yr.csv')
+          source = candidates[0]
+          target = out / 'all_stocks_5yr.csv'
+          if source.resolve() != target.resolve():
+              shutil.copy2(source, target)
+          print(f'kagglehub source={source}')
+          PY
+          fi
+
           python - <<'PY'
           import hashlib, json
           from pathlib import Path
