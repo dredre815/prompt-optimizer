@@ -1,0 +1,51 @@
+name: AlphaLaunder Complete QuantaAlpha CLI Experiment V3
+
+on:
+  push:
+    paths:
+      - .github/workflows/alphalaunder-fullcli-v3.yml
+      - alphalaunder_fullcli_v3/**
+  workflow_dispatch:
+
+jobs:
+  run-fullcli-v3:
+    runs-on: ubuntu-latest
+    timeout-minutes: 300
+    permissions:
+      contents: write
+      issues: write
+    env:
+      ALPHALAUNDER_CLI_ISSUE_NUMBER: "18"
+      ALPHALAUNDER_CLI_RESULT_BRANCH: "alphalaunder-fullcli-v3-results-20260804"
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+
+      - name: Reconstruct verified bootstrap
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat alphalaunder_fullcli_v3/bootstrap_parts/part* > /tmp/alphalaunder-fullcli-v3.sh.gz.b64
+          base64 --decode /tmp/alphalaunder-fullcli-v3.sh.gz.b64 | gzip --decompress > /tmp/alphalaunder-fullcli-v3.sh
+          echo "2b1f12171bdf2f9bbe6bd090b02940a13d63bc30cc037574374419f2dd5b9c1f  /tmp/alphalaunder-fullcli-v3.sh" | sha256sum --check --strict
+          bash -n /tmp/alphalaunder-fullcli-v3.sh
+
+      - name: Run credential-isolated complete CLI experiment
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: bash /tmp/alphalaunder-fullcli-v3.sh
+
+      - name: Upload full CLI artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: alphalaunder-fullcli-v3
+          path: alphalaunder_fullcli_artifact
+          if-no-files-found: warn
+          retention-days: 7
