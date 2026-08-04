@@ -1,0 +1,22 @@
+Traceback (most recent call last):
+  File "/tmp/backtest-heist-akfbX6/pilot.py", line 1283, in <module>
+    raise SystemExit(main())
+                     ^^^^^^
+  File "/tmp/backtest-heist-akfbX6/pilot.py", line 1279, in main
+    return asyncio.run(main_async(args))
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/asyncio/runners.py", line 194, in run
+    return runner.run(main)
+           ^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/asyncio/runners.py", line 118, in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/asyncio/base_events.py", line 687, in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+  File "/tmp/backtest-heist-akfbX6/pilot.py", line 1195, in main_async
+    datasets.append(build_real_dataset(outdir / "market_cache"))
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/tmp/backtest-heist-akfbX6/pilot.py", line 272, in build_real_dataset
+    raise RuntimeError(f"Insufficient real symbols ({len(frames)}); failures={failures}")
+RuntimeError: Insufficient real symbols (0); failures={'DBA': 'ValueError: empty or malformed Stooq response', 'DBB': 'ValueError: empty or malformed Stooq response', 'EEM': 'ValueError: empty or malformed Stooq response', 'EFA': 'ValueError: empty or malformed Stooq response', 'GLD': 'ValueError: empty or malformed Stooq response', 'HYG': 'ValueError: empty or malformed Stooq response', 'IEF': 'ValueError: empty or malformed Stooq response', 'IWM': 'ValueError: empty or malformed Stooq response', 'LQD': 'ValueError: empty or malformed Stooq response', 'QQQ': 'ValueError: empty or malformed Stooq response', 'SLV': 'ValueError: empty or malformed Stooq response', 'SPY': 'ValueError: empty or malformed Stooq response', 'TLT': 'ValueError: empty or malformed Stooq response', 'USO': 'ValueError: empty or malformed Stooq response', 'UUP': 'ValueError: empty or malformed Stooq response', 'VNQ': 'ValueError: empty or malformed Stooq response', 'XLE': 'ValueError: empty or malformed Stooq response', 'XLF': 'ValueError: empty or malformed Stooq response', 'XLI': 'ValueError: empty or malformed Stooq response', 'XLK': 'ValueError: empty or malformed Stooq response', 'XLP': 'ValueError: empty or malformed Stooq response', 'XLU': 'ValueError: empty or malformed Stooq response', 'XLV': 'ValueError: empty or malformed Stooq response', 'XLY': 'ValueError: empty or malformed Stooq response'}
