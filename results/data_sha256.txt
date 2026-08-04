@@ -1,0 +1,2 @@
+233485a9035d5d0092736d336605f38474129f5c2673b8a00d046cc6e4e88542  /tmp/alphalaunder-fullcli-RBZdwL/work/QuantaAlpha/hf_data/cn_data.zip
+a357dcc5f641161af9661d9b1605f2f66844de37f8e02b0bc881e87ed16f3e9b  /tmp/alphalaunder-fullcli-RBZdwL/work/QuantaAlpha/hf_data/daily_pv.h5

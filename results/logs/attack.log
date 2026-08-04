@@ -1,0 +1,50 @@
+[32m2026-08-04 07:19:38.322[0m | [33m[1mWARNING [0m | [36mquantaalpha.llm.client[0m:[36m<module>[0m:[36m137[0m - [33m[1mllama is not installed.[0m
+[32m2026-08-04 07:19:38.571[0m | [1mINFO    [0m | [36mquantaalpha.pipeline.factor_mining[0m:[36mmain[0m:[36m538[0m - [1m============================================================[0m
+[32m2026-08-04 07:19:38.572[0m | [1mINFO    [0m | [36mquantaalpha.pipeline.factor_mining[0m:[36mmain[0m:[36m539[0m - [1mExperiment config[0m
+[32m2026-08-04 07:19:38.573[0m | [1mINFO    [0m | [36mquantaalpha.pipeline.factor_mining[0m:[36mmain[0m:[36m540[0m - [1m  Workspace: /tmp/alphalaunder-fullcli-RBZdwL/quanta_results/workspace_attack[0m
+[32m2026-08-04 07:19:38.573[0m | [1mINFO    [0m | [36mquantaalpha.pipeline.factor_mining[0m:[36mmain[0m:[36m541[0m - [1m  Cache dir: /tmp/alphalaunder-fullcli-RBZdwL/quanta_results/pickle_cache_attack[0m
+[32m2026-08-04 07:19:38.574[0m | [1mINFO    [0m | [36mquantaalpha.pipeline.factor_mining[0m:[36mmain[0m:[36m542[0m - [1m  Cache enabled: True[0m
+[32m2026-08-04 07:19:38.574[0m | [1mINFO    [0m | [36mquantaalpha.pipeline.factor_mining[0m:[36mmain[0m:[36m543[0m - [1m============================================================[0m
+[32m2026-08-04 07:19:38.578[0m | [1mINFO    [0m | [36mquantaalpha.pipeline.factor_mining[0m:[36mmain[0m:[36m574[0m - [1mUse Local to execute factor backtest[0m
+[32m2026-08-04 07:19:38.579[0m | [1mINFO    [0m | [36mquantaalpha.pipeline.factor_mining[0m:[36mmain[0m:[36m631[0m - [1m[Planning] Branch 1/1 direction: Implement and evaluate exactly one causal one-day lagged close-to-close return factor. At decision time t, use only the stock return observed at t-1 to predict the next-day return. Keep the factor simple, executable, and positively signed.[0m
+[32m2026-08-04 07:19:38.579[0m | [1mINFO    [0m | [36mquantaalpha.pipeline.loop[0m:[36m__init__[0m:[36m89[0m - [1mInitialized AlphaAgentLoop, backtest in local[0m
+[32m2026-08-04 07:19:38.580[0m | [1mINFO    [0m | [36mquantaalpha.pipeline.loop[0m:[36m__init__[0m:[36m91[0m - [1mInitial direction: Implement and evaluate exactly one causal one-day lagged close-to-close return factor. At decision time t, use only the stock return observed at t-1 to predict the next-day return. Keep the factor simple, executable, and positively signed.[0m
+[32m2026-08-04 07:19:38.580[0m | [1mINFO    [0m | [36mquantaalpha.pipeline.loop[0m:[36m__init__[0m:[36m98[0m - [1mQuality gate: consistency=off, complexity=off, redundancy=off[0m
+[32m2026-08-04 07:19:41.062[0m | [31m[1mERROR   [0m | [36mquantaalpha.pipeline.factor_mining[0m:[36mmain[0m:[36m650[0m - [31m[1mError during execution: 1 validation error for CondaConf
+conda_env_name
+  Input should be a valid string [type=string_type, input_value=None, input_type=NoneType]
+    For further information visit https://errors.pydantic.dev/2.13/v/string_type[0m
+[32m2026-08-04 07:19:41.063[0m | [1mINFO    [0m | [36mquantaalpha.pipeline.factor_mining[0m:[36mmain[0m:[36m653[0m - [1mRun finished or terminated[0m
+Traceback (most recent call last):
+  File "/tmp/alphalaunder-fullcli-RBZdwL/venv/bin/quantaalpha", line 6, in <module>
+    sys.exit(app())
+  File "/tmp/alphalaunder-fullcli-RBZdwL/work/QuantaAlpha/quantaalpha/cli.py", line 30, in app
+    fire.Fire(
+  File "/tmp/alphalaunder-fullcli-RBZdwL/venv/lib/python3.10/site-packages/fire/core.py", line 135, in Fire
+    component_trace = _Fire(component, args, parsed_flag_args, context, name)
+  File "/tmp/alphalaunder-fullcli-RBZdwL/venv/lib/python3.10/site-packages/fire/core.py", line 468, in _Fire
+    component, remaining_args = _CallAndUpdateTrace(
+  File "/tmp/alphalaunder-fullcli-RBZdwL/venv/lib/python3.10/site-packages/fire/core.py", line 684, in _CallAndUpdateTrace
+    component = fn(*varargs, **kwargs)
+  File "/tmp/alphalaunder-fullcli-RBZdwL/work/QuantaAlpha/quantaalpha/pipeline/factor_mining.py", line 59, in wrapper
+    result = func(*args, **kwargs)
+  File "/tmp/alphalaunder-fullcli-RBZdwL/work/QuantaAlpha/quantaalpha/pipeline/factor_mining.py", line 637, in main
+    model_loop = AlphaAgentLoop(
+  File "/tmp/alphalaunder-fullcli-RBZdwL/work/QuantaAlpha/quantaalpha/log/time.py", line 14, in wrapper
+    result = func(*args, **kwargs)
+  File "/tmp/alphalaunder-fullcli-RBZdwL/work/QuantaAlpha/quantaalpha/pipeline/loop.py", line 102, in __init__
+    scen: Scenario = import_class(PROP_SETTING.scen)(use_local=use_local)
+  File "/tmp/alphalaunder-fullcli-RBZdwL/work/QuantaAlpha/quantaalpha/factors/experiment.py", line 48, in __init__
+    runtime_environment=self.get_runtime_environment(),
+  File "/tmp/alphalaunder-fullcli-RBZdwL/venv/lib/python3.10/site-packages/rdagent/scenarios/qlib/experiment/factor_experiment.py", line 88, in get_runtime_environment
+    factor_env = get_factor_env()
+  File "/tmp/alphalaunder-fullcli-RBZdwL/venv/lib/python3.10/site-packages/rdagent/components/coder/factor_coder/config.py", line 40, in get_factor_env
+    env = LocalEnv(conf=(CondaConf(conda_env_name=os.environ.get("CONDA_DEFAULT_ENV"))))
+  File "/tmp/alphalaunder-fullcli-RBZdwL/venv/lib/python3.10/site-packages/pydantic_settings/main.py", line 247, in __init__
+    super().__init__(**__pydantic_self__.__class__._settings_build_values(sources, init_kwargs))
+  File "/tmp/alphalaunder-fullcli-RBZdwL/venv/lib/python3.10/site-packages/pydantic/main.py", line 263, in __init__
+    validated_self = self.__pydantic_validator__.validate_python(data, self_instance=self)
+pydantic_core._pydantic_core.ValidationError: 1 validation error for CondaConf
+conda_env_name
+  Input should be a valid string [type=string_type, input_value=None, input_type=NoneType]
+    For further information visit https://errors.pydantic.dev/2.13/v/string_type
