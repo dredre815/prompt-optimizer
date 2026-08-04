@@ -1,4 +1,4 @@
-name: Backtest Heist PR DeepSeek-V4-Flash pilot v3
+name: Backtest Heist PR DeepSeek-V4-Flash pilot v4
 
 on:
   pull_request:
@@ -18,25 +18,61 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 180
     env:
-      BACKTEST_HEIST_ISSUE_NUMBER: '14'
-      BACKTEST_HEIST_RESULT_BRANCH: backtest-heist-results-20260804-v3
-      FIXED_BOOTSTRAP_COMMIT: '67063796b081c7899f9e9b869cbb707df709b4f2'
-      FIXED_RUNNER_COMMIT: '4f933174d82124ecccfcaf0117d8b520cb447cee'
+      BACKTEST_HEIST_ISSUE_NUMBER: '16'
+      BACKTEST_HEIST_RESULT_BRANCH: backtest-heist-results-20260804-v4
+      FIXED_RUNTIME_COMMIT: '6cf312d8f731206e6c88cde45672d18e3aca97fa'
+      BACKTEST_HEIST_REAL_DATA_PATH: '/tmp/backtest-heist-data/all_stocks_5yr.csv'
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Import immutable bootstrap and verified runner chunks
+      - name: Import immutable v4 runtime
         shell: bash
         run: |
-          git fetch --no-tags --depth=1 origin "$FIXED_BOOTSTRAP_COMMIT"
-          git fetch --no-tags --depth=1 origin "$FIXED_RUNNER_COMMIT"
+          git fetch --no-tags --depth=1 origin "$FIXED_RUNTIME_COMMIT"
           rm -rf backtest_heist_runtime
           mkdir -p backtest_heist_runtime/runner_parts backtest_heist_runtime/bootstrap_parts
-          git show "$FIXED_BOOTSTRAP_COMMIT":backtest_heist_runtime/bootstrap_parts/part00 > backtest_heist_runtime/bootstrap_parts/part00
-          for p in 00 01 02 03 04 05 06 07; do
-            git show "$FIXED_RUNNER_COMMIT":backtest_heist_runtime/runner_parts/part${p} > backtest_heist_runtime/runner_parts/part${p}
+          git show "$FIXED_RUNTIME_COMMIT":backtest_heist_runtime/bootstrap_parts/part00 > backtest_heist_runtime/bootstrap_parts/part00
+          for p in 00 01 02 03 04 05 06; do
+            git show "$FIXED_RUNTIME_COMMIT":backtest_heist_runtime/runner_parts/part${p} > backtest_heist_runtime/runner_parts/part${p}
           done
+
+      - name: Download and validate pinned S&P 500 snapshot
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          mkdir -p /tmp/backtest-heist-data
+          URL='https://www.kaggle.com/api/v1/datasets/download/camnugent/sandp500?datasetVersionNumber=4'
+          curl --fail --location --retry 6 --retry-all-errors --connect-timeout 30 \
+            --user-agent 'backtest-heist-research-pilot/1.0' \
+            "$URL" -o /tmp/backtest-heist-data/sandp500-v4.zip
+          unzip -t /tmp/backtest-heist-data/sandp500-v4.zip
+          unzip -j -o /tmp/backtest-heist-data/sandp500-v4.zip 'all_stocks_5yr.csv' \
+            -d /tmp/backtest-heist-data
+          python - <<'PY'
+          import hashlib, json
+          from pathlib import Path
+          import pandas as pd
+          p = Path('/tmp/backtest-heist-data/all_stocks_5yr.csv')
+          raw = p.read_bytes()
+          df = pd.read_csv(p, usecols=['date','open','high','low','close','volume','Name'])
+          meta = {
+              'dataset': 'camnugent/sandp500',
+              'dataset_version': 4,
+              'license': 'CC0-1.0',
+              'file': p.name,
+              'sha256': hashlib.sha256(raw).hexdigest(),
+              'rows': int(len(df)),
+              'tickers': int(df['Name'].nunique()),
+              'date_min': str(df['date'].min()),
+              'date_max': str(df['date'].max()),
+          }
+          assert meta['rows'] > 500_000, meta
+          assert meta['tickers'] > 400, meta
+          Path('/tmp/backtest-heist-data/snapshot_metadata.json').write_text(
+              json.dumps(meta, indent=2), encoding='utf-8')
+          print(json.dumps(meta, indent=2))
+          PY
 
       - name: Reconstruct and run secure bootstrap
         shell: bash
@@ -46,6 +82,15 @@ jobs:
           /tmp/backtest_heist_bootstrap.sh
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Copy snapshot provenance into results
+        if: always()
+        shell: bash
+        run: |
+          if [ -f /tmp/backtest-heist-data/snapshot_metadata.json ]; then
+            mkdir -p backtest_heist_runtime/output
+            cp /tmp/backtest-heist-data/snapshot_metadata.json backtest_heist_runtime/output/
+          fi
 
       - name: Upload non-secret experiment artifact
         if: always()
