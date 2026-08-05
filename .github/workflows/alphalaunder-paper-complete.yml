@@ -1,0 +1,56 @@
+name: AlphaLaunder Paper Minimal Complete Suite
+
+on:
+  push:
+    paths:
+      - .github/workflows/alphalaunder-paper-complete.yml
+      - alphalaunder_paper_complete/source_bundle.tar.gz.b64
+  workflow_dispatch:
+
+jobs:
+  run-paper-complete-suite:
+    runs-on: ubuntu-latest
+    timeout-minutes: 350
+    permissions:
+      contents: write
+      issues: write
+    env:
+      ALPHALAUNDER_ISSUE_NUMBER: "21"
+      ALPHALAUNDER_RESULT_BRANCH: "alphalaunder-paper-complete-results-20260805"
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+
+      - name: Reconstruct and verify experiment sources
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p alphalaunder_paper_complete/runtime
+          base64 --decode alphalaunder_paper_complete/source_bundle.tar.gz.b64 > /tmp/alphalaunder-source.tar.gz
+          echo "7926573f19034340fff931c0b8b6533ee1e2a3e7badb23ed4e2c4929dd4a55a5  /tmp/alphalaunder-source.tar.gz" | sha256sum --check --strict
+          tar -xzf /tmp/alphalaunder-source.tar.gz -C alphalaunder_paper_complete/runtime
+          python -m py_compile \
+            alphalaunder_paper_complete/runtime/paper_complete_suite.py \
+            alphalaunder_paper_complete/runtime/sitecustomize.py \
+            alphalunder_paper_complete/runtime/analyse_fullcli.py
+          bash -n alphalaunder_paper_complete/runtime/bootstrap.sh
+
+      - name: Run credential-isolated paper-complete suite
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: bash alphalaunder_paper_complete/runtime/bootstrap.sh
+
+      - name: Upload experiment artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: alphalaunder-paper-complete
+          path: alphalaunder_paper_complete_artifact
+          if-no-files-found: warn
+          retention-days: 14
