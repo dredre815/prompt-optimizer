@@ -1,0 +1,34 @@
+planning:
+  enabled: false
+  num_directions: 1
+  use_llm: false
+  allow_fallback: true
+execution:
+  max_loops: 1
+  steps_per_loop: 5
+  step_n: 5
+  use_local: true
+  parallel_execution: false
+evolution:
+  enabled: false
+  mutation_enabled: false
+  crossover_enabled: false
+  max_rounds: 1
+quality_gate:
+  consistency_enabled: false
+  complexity_enabled: false
+  redundancy_enabled: false
+factor:
+  factors_per_hypothesis: 1
+backtest:
+  use_docker: false
+  timeout: 2400
+llm:
+  factor_mining_timeout: 9000
+  max_retries: 5
+  retry_delay: 2.0
+  json_mode_strict: true
+logging:
+  level: INFO
+  save_snapshots: true
+  save_trajectory_pool: true
