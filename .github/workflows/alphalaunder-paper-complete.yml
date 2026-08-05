@@ -37,7 +37,7 @@ jobs:
           python -m py_compile \
             alphalaunder_paper_complete/runtime/paper_complete_suite.py \
             alphalaunder_paper_complete/runtime/sitecustomize.py \
-            alphalunder_paper_complete/runtime/analyse_fullcli.py
+            alphalaunder_paper_complete/runtime/analyse_fullcli.py
           bash -n alphalaunder_paper_complete/runtime/bootstrap.sh
 
       - name: Run credential-isolated paper-complete suite
