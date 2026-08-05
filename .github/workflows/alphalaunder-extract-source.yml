@@ -17,18 +17,22 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          rm -rf /tmp/alphalaunder-src
+          rm -rf /tmp/alphalaunder-src extracted_paper_complete_sources
           mkdir -p /tmp/alphalaunder-src extracted_paper_complete_sources
           python - <<'PY'
           import base64, pathlib
-          p = pathlib.Path('alphalaunder_paper_complete/source_bundle.tar.gz.b64')
-          raw = ''.join(p.read_text().split())
-          pathlib.Path('/tmp/source.tar.gz').write_bytes(base64.b64decode(raw, validate=False))
+          root = pathlib.Path('alphalaunder_paper_complete')
+          parts = sorted(root.glob('bundle_part*'))
+          assert parts, 'No bundle parts found'
+          raw = ''.join(''.join(p.read_text().split()) for p in parts)
+          data = base64.b64decode(raw, validate=False)
+          pathlib.Path('/tmp/source.tar.gz').write_bytes(data)
+          print('parts=', len(parts), 'decoded_bytes=', len(data))
           PY
           echo "7926573f19034340fff931c0b8b6533ee1e2a3e7badb23ed4e2c4929dd4a55a5  /tmp/source.tar.gz" | sha256sum --check --strict
           tar -xzf /tmp/source.tar.gz -C /tmp/alphalaunder-src
           cp -a /tmp/alphalaunder-src/. extracted_paper_complete_sources/
-          find extracted_paper_complete_sources -type f -maxdepth 3 -print
+          find extracted_paper_complete_sources -maxdepth 3 -type f -print
       - name: Commit extracted sources
         shell: bash
         run: |
