@@ -40,6 +40,11 @@ jobs:
             alphalaunder_paper_complete/runtime/sitecustomize.py \
             alphalaunder_paper_complete/runtime/analyse_fullcli.py
           bash -n alphalaunder_paper_complete/runtime/bootstrap.sh
+          cp alphalaunder_paper_complete/runtime/paper_complete_suite.py alphalaunder_paper_complete/paper_complete_suite.py
+          cp alphalaunder_paper_complete/runtime/sitecustomize.py alphalaunder_paper_complete/sitecustomize.py
+          cp alphalaunder_paper_complete/runtime/analyse_fullcli.py alphalaunder_paper_complete/analyse_fullcli.py
+          cp alphalaunder_paper_complete/runtime/experiment_minimal.yaml alphalaunder_paper_complete/experiment_minimal.yaml
+          cp alphalaunder_paper_complete/runtime/bootstrap.sh alphalaunder_paper_complete/bootstrap.sh
 
       - name: Run credential-isolated paper-complete suite
         shell: bash
