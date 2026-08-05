@@ -4,7 +4,7 @@ on:
   push:
     paths:
       - .github/workflows/alphalaunder-paper-complete.yml
-      - alphalaunder_paper_complete/source_bundle.tar.gz.b64
+      - alphalaunder_paper_complete/bundle_part**
   workflow_dispatch:
 
 jobs:
@@ -31,7 +31,8 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p alphalaunder_paper_complete/runtime
-          base64 --decode alphalaunder_paper_complete/source_bundle.tar.gz.b64 > /tmp/alphalaunder-source.tar.gz
+          cat alphalaunder_paper_complete/bundle_part* > /tmp/alphalaunder-source.tar.gz.b64
+          base64 --decode /tmp/alphalaunder-source.tar.gz.b64 > /tmp/alphalaunder-source.tar.gz
           echo "7926573f19034340fff931c0b8b6533ee1e2a3e7badb23ed4e2c4929dd4a55a5  /tmp/alphalaunder-source.tar.gz" | sha256sum --check --strict
           tar -xzf /tmp/alphalaunder-source.tar.gz -C alphalaunder_paper_complete/runtime
           python -m py_compile \
