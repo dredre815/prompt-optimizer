@@ -1,0 +1,53 @@
+name: WorldSeal TradingAgents DeepSeek-V4-Flash strict-counterexample pilot
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/worldseal_tradingagents_ephemeral.yml'
+
+permissions:
+  contents: read
+  issues: write
+  actions: read
+
+jobs:
+  pilot:
+    runs-on: ubuntu-latest
+    timeout-minutes: 300
+    env:
+      WORLDSEAL_ISSUE_NUMBER: '22'
+      WORLDSEAL_RUNTIME_BRANCH: worldseal-tradingagents-pilot-20260809
+    steps:
+      - name: Checkout coordination repository
+        uses: actions/checkout@v4
+
+      - name: Import pinned experiment runtime
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch --no-tags --depth=1 origin "$WORLDSEAL_RUNTIME_BRANCH"
+          mkdir -p worldseal_runtime/runner_parts
+          git show FETCH_HEAD:worldseal_runtime/runner_parts/part00 > worldseal_runtime/runner_parts/part00
+          git show FETCH_HEAD:worldseal_runtime/runner_parts/part01 > worldseal_runtime/runner_parts/part01
+          git show FETCH_HEAD:worldseal_runtime/bootstrap.sh > worldseal_runtime/bootstrap.sh
+
+      - name: Verify and run credential-isolated bootstrap
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "e4cf41593d6fab2df710c17e99753ae85809168fdd41b4de2b7203c9bb62462a  worldseal_runtime/bootstrap.sh" | sha256sum --check --strict
+          chmod 700 worldseal_runtime/bootstrap.sh
+          worldseal_runtime/bootstrap.sh
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload non-secret experiment artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: worldseal-tradingagents-results-${{ github.run_id }}
+          path: worldseal_runtime/output
+          if-no-files-found: warn
+          retention-days: 14
