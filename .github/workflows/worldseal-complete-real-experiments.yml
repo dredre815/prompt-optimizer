@@ -1,0 +1,49 @@
+name: WorldSeal complete real MAS experiments
+
+on:
+  push:
+    branches:
+      - worldseal-complete-real-experiments-20260810
+    paths:
+      - 'worldseal_payload.tar.gz.b64'
+      - '.github/workflows/worldseal-complete-real-experiments.yml'
+
+permissions:
+  contents: read
+  issues: write
+  actions: read
+
+jobs:
+  experiments:
+    runs-on: ubuntu-latest
+    timeout-minutes: 355
+    env:
+      WORLDSEAL_ISSUE_NUMBER: '23'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Verify and reconstruct experiment sources
+        shell: bash
+        run: |
+          echo "69dc748a73d4a3001de43db393d91e0f99901e2286fef9acaff178c2efdd60f0  worldseal_payload.tar.gz.b64" | sha256sum --check --strict
+          base64 --decode worldseal_payload.tar.gz.b64 > /tmp/worldseal_payload.tar.gz
+          echo "d89b71be365ca5abfee12193ae68a0cf12eedcf186e0bd18ee4a6ed393054cee  /tmp/worldseal_payload.tar.gz" | sha256sum --check --strict
+          tar -xzf /tmp/worldseal_payload.tar.gz
+          chmod +x worldseal/secure_bootstrap.sh worldseal/run_all.sh
+      - name: Run credential-isolated real-system experiments
+        shell: bash
+        run: ./worldseal/secure_bootstrap.sh
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Upload raw traces and reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: worldseal-real-experiments-${{ github.run_id }}
+          path: |
+            worldseal_output
+            worldseal_results.zip
+          if-no-files-found: warn
+          retention-days: 14
