@@ -5,6 +5,7 @@ on:
     paths:
       - '.github/workflows/worldseal-clean-pilot.yml'
       - 'worldseal_clean/pilot_chunks/**'
+      - 'worldseal_clean/apply_v2_patch.py'
 permissions:
   contents: read
   issues: write
@@ -21,7 +22,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-      - name: Reconstruct and verify pilot sources
+      - name: Reconstruct, patch, and verify pilot sources
         shell: bash
         run: |
           echo "14b48e7315f6dbebb1ba5ff72a508bc9f9c90744f445ae910bf1889243e332f8  worldseal_clean/pilot_chunks/part00" | sha256sum --check --strict
@@ -38,6 +39,10 @@ jobs:
           base64 --decode /tmp/worldseal_pilot_payload.tar.gz.b64 > /tmp/worldseal_pilot_payload.tar.gz
           echo "36b5c2417c312e747f70b1e7017c539b632ae7b0a10713c4351aab903ab713e5  /tmp/worldseal_pilot_payload.tar.gz" | sha256sum --check --strict
           tar -xzf /tmp/worldseal_pilot_payload.tar.gz
+          python worldseal_clean/apply_v2_patch.py
+          echo "169a77489dc0e24c9c5723cd3be0b74605040af2f0923d96d28c0afb4862ac29  worldseal_clean/common.py" | sha256sum --check --strict
+          echo "00f80c903f3b7cc2148d9ba49af45adbab0c6cc7bae37824944cd7186505305d  worldseal_clean/tradingagents_experiment.py" | sha256sum --check --strict
+          echo "83d05083c8342c2df0ff3b2a15af2be89d1cb422db8051377111c267f2146355  worldseal_clean/rdagent_experiment.py" | sha256sum --check --strict
           chmod +x worldseal_clean/run_all.sh worldseal_clean/credential_bootstrap.sh worldseal_clean/smoke.sh
           python -m py_compile worldseal_clean/common.py worldseal_clean/tradingagents_experiment.py worldseal_clean/broker_experiment.py worldseal_clean/rdagent_experiment.py worldseal_clean/verify_pilot.py
       - name: Credential-isolated verified pilots
