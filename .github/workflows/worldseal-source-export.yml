@@ -1,0 +1,40 @@
+name: WorldSeal source export
+on:
+  push:
+    branches: [worldseal-clean-rerun-20260810]
+    paths:
+      - '.github/workflows/worldseal-source-export.yml'
+permissions:
+  contents: read
+  actions: read
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Reconstruct verified source
+        shell: bash
+        run: |
+          echo "14b48e7315f6dbebb1ba5ff72a508bc9f9c90744f445ae910bf1889243e332f8  worldseal_clean/pilot_chunks/part00" | sha256sum --check --strict
+          echo "937789eef24cfe6011d2a9341ee3119126dc609d8766ac3ff4c5a927c495762a  worldseal_clean/pilot_chunks/part01" | sha256sum --check --strict
+          echo "55fbc718a1f44413cbe8ff226bb90221032c2d25b5b06f17cb1ebf256a839298  worldseal_clean/pilot_chunks/part02" | sha256sum --check --strict
+          echo "a115b35960a5c68b6fa8de8690fe5583b2945e162b401677bb2ebf9c87747023  worldseal_clean/pilot_chunks/part03" | sha256sum --check --strict
+          echo "8e0953de02ea370c178836beff7d5ef4e856019656275a949e9fab706b6c8860  worldseal_clean/pilot_chunks/part04" | sha256sum --check --strict
+          echo "e641b3dd48ac3580ad0bf53a0cbd3c70102071cf6ef986e638c9509c3f8136c5  worldseal_clean/pilot_chunks/part05" | sha256sum --check --strict
+          echo "ec49e6dcafea22ca50ee9039f1ccb7682c3ebe8c0c93c90785efd0c16519c167  worldseal_clean/pilot_chunks/part06" | sha256sum --check --strict
+          echo "9dac02ab2a1fbd4690b6fec8f7878ae1b18e7f6adfe61d69f1f42890a390ba46  worldseal_clean/pilot_chunks/part07" | sha256sum --check --strict
+          echo "fee3392652bcf3f7eb176c72fbe5290c477d6f3e80f0aa14204715eea635ca7a  worldseal_clean/pilot_chunks/part08" | sha256sum --check --strict
+          cat worldseal_clean/pilot_chunks/part* > /tmp/payload.b64
+          echo "52914ed76e2b0df9286a551ce3cb1d60200b49749f3cca6f8d17f894aab47d07  /tmp/payload.b64" | sha256sum --check --strict
+          base64 --decode /tmp/payload.b64 > /tmp/payload.tar.gz
+          echo "36b5c2417c312e747f70b1e7017c539b632ae7b0a10713c4351aab903ab713e5  /tmp/payload.tar.gz" | sha256sum --check --strict
+          rm -rf exported_source
+          mkdir exported_source
+          tar -xzf /tmp/payload.tar.gz -C exported_source
+          find exported_source -type f -print0 | sort -z | xargs -0 sha256sum > exported_source/SOURCE_SHA256SUMS.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: worldseal-verified-source-${{ github.run_id }}
+          path: exported_source
+          retention-days: 7
