@@ -1,7 +1,7 @@
 name: TracePrivacy real MAS kill test
 on:
   push:
-    branches: [traceprivacy-killtest-20260810]
+    branches: [main]
     paths:
       - '.github/workflows/traceprivacy-killtest.yml'
       - 'traceprivacy_payload/**'
