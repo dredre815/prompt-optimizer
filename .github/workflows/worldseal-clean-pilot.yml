@@ -1,0 +1,57 @@
+name: WorldSeal verified pilot experiments
+on:
+  push:
+    branches: [worldseal-clean-rerun-20260810]
+    paths:
+      - '.github/workflows/worldseal-clean-pilot.yml'
+      - 'worldseal_clean/pilot_payload.tar.gz.b64'
+permissions:
+  contents: read
+  issues: write
+  actions: read
+jobs:
+  pilot:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    env:
+      WORLDSEAL_ISSUE_NUMBER: '24'
+      WORLDSEAL_RUN_MODE: 'pilot'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Reconstruct and verify pilot sources
+        shell: bash
+        run: |
+          echo "52914ed76e2b0df9286a551ce3cb1d60200b49749f3cca6f8d17f894aab47d07  worldseal_clean/pilot_payload.tar.gz.b64" | sha256sum --check --strict
+          base64 --decode worldseal_clean/pilot_payload.tar.gz.b64 > /tmp/worldseal_pilot_payload.tar.gz
+          echo "36b5c2417c312e747f70b1e7017c539b632ae7b0a10713c4351aab903ab713e5  /tmp/worldseal_pilot_payload.tar.gz" | sha256sum --check --strict
+          tar -xzf /tmp/worldseal_pilot_payload.tar.gz
+          chmod +x worldseal_clean/run_all.sh worldseal_clean/credential_bootstrap.sh worldseal_clean/smoke.sh
+          python -m py_compile worldseal_clean/common.py worldseal_clean/tradingagents_experiment.py worldseal_clean/broker_experiment.py worldseal_clean/rdagent_experiment.py worldseal_clean/verify_pilot.py
+      - name: Credential-isolated verified pilots
+        shell: bash
+        run: bash worldseal_clean/credential_bootstrap.sh full
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Verify completion marker before upload
+        if: success()
+        run: test -f worldseal_output/PILOT_COMPLETE_SUCCESS.marker
+      - name: Package pilot evidence
+        if: always()
+        shell: bash
+        run: |
+          if [ -d worldseal_output ]; then
+            zip -q -r worldseal_pilot_evidence.zip worldseal_output
+          fi
+      - name: Upload pilot evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: worldseal-verified-pilot-${{ github.run_id }}
+          path: |
+            worldseal_output
+            worldseal_pilot_evidence.zip
+          if-no-files-found: warn
+          retention-days: 14
