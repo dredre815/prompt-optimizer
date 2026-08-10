@@ -1,0 +1,99 @@
+name: TracePrivacy parallel pilot shards
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/traceprivacy-parallel-pilot.yml'
+
+permissions:
+  contents: read
+  issues: write
+  actions: read
+
+jobs:
+  shard:
+    strategy:
+      fail-fast: false
+      max-parallel: 6
+      matrix:
+        target: [tradingagents, swarm]
+        scenario:
+          - ALFA_bull_day_a
+          - ALFA_bull_day_b
+          - ALFA_neutral_day_a
+          - ALFA_neutral_day_b
+          - ALFA_bear_day_a
+          - ALFA_bear_day_b
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    env:
+      TRACEPRIVACY_ISSUE_NUMBER: '25'
+      TRACEPRIVACY_TARGET: ${{ matrix.target }}
+      TRACEPRIVACY_SCENARIO_ID: ${{ matrix.scenario }}
+      PYTHONPATH: ${{ github.workspace }}
+      PYTHONUNBUFFERED: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Reconstruct frozen source and apply audited capture patch
+        shell: bash
+        run: |
+          cat traceprivacy_payload/part00 traceprivacy_payload/part01 traceprivacy_payload/part02 traceprivacy_payload/rest00 traceprivacy_payload/rest01 traceprivacy_payload/rest02 traceprivacy_payload/rest03 traceprivacy_payload/rest04 traceprivacy_payload/rest05 > /tmp/traceprivacy_payload.b64
+          echo '62191da485d3f4beb61c5b5ee2a09f52aa045fb7b72420fa05c2d6f844788a1f  /tmp/traceprivacy_payload.b64' | sha256sum --check --strict
+          base64 --decode /tmp/traceprivacy_payload.b64 > /tmp/traceprivacy_payload.tar.gz
+          echo 'ae32b287e587ed664418c40e39ffdc6f41191082a4db713e87b4573906629404  /tmp/traceprivacy_payload.tar.gz' | sha256sum --check --strict
+          tar -xzf /tmp/traceprivacy_payload.tar.gz
+          echo '2e24ff74c5199a38e5fa501926641d64dc2c4bcab6b1b2acfcdae69afa558e3d  traceprivacy_engineering_patch.py' | sha256sum --check --strict
+          python traceprivacy_engineering_patch.py
+          echo 'a42eaa86a6723042d1b2e9fa70e61f2bb366e8e7763dff58296850255d9ee1d6  trace_privacy/common.py' | sha256sum --check --strict
+          echo '9499ed561947ea28bd86c297bff91506d9b1242e300567bc663ae74d765672ae  trace_privacy/tradingagents_runner.py' | sha256sum --check --strict
+          echo 'e7ef7c59ec7e59c54e0db206123f22f947a0fdffda5bf464e0de732bc8bbb456  traceprivacy_shard_runner.py' | sha256sum --check --strict
+          echo 'da3f97876c71d736ff84f5896f67ba94523173822e3b635e7642f49585e39ea7  traceprivacy_shard_credential.sh' | sha256sum --check --strict
+          chmod +x traceprivacy_shard_credential.sh
+          python -m py_compile trace_privacy/*.py traceprivacy_shard_runner.py traceprivacy_engineering_patch.py
+      - name: Install capture and runtime dependencies
+        shell: bash
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq tcpdump
+          sudo sysctl -w net.ipv6.conf.all.disable_ipv6=1 || true
+          python -m pip install --upgrade pip wheel setuptools
+          python -m pip install 'openai>=2.0,<3' pandas numpy colorama questionary python-dateutil tabulate
+      - name: Clone and pin real MAS repositories
+        shell: bash
+        run: |
+          mkdir -p repos
+          if [ "$TRACEPRIVACY_TARGET" = tradingagents ]; then
+            git clone -q https://github.com/TauricResearch/TradingAgents.git repos/TradingAgents
+            git -C repos/TradingAgents checkout -q a33fd4c0f134485a43553a2c23a63cb14adbd88f
+            python -m pip install -e repos/TradingAgents
+            mkdir -p repos/swarm-trader
+          else
+            git clone -q https://github.com/zhound420/swarm-trader.git repos/swarm-trader
+            git -C repos/swarm-trader checkout -q 3470b8291c438dc36b22ed37b7e56ba2bbf249b5
+            mkdir -p repos/TradingAgents
+          fi
+      - name: Credential-isolated real MAS plus matched-single run
+        shell: bash
+        run: bash traceprivacy_shard_credential.sh
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Require shard hard-verification marker
+        if: success()
+        run: test -f traceprivacy_output/SHARD_COMPLETE_SUCCESS.marker
+      - name: Package evidence
+        if: always()
+        shell: bash
+        run: zip -q -r "traceprivacy_${TRACEPRIVACY_TARGET}_${TRACEPRIVACY_SCENARIO_ID}_${GITHUB_RUN_ID}.zip" traceprivacy_output trace_privacy traceprivacy_shard_runner.py traceprivacy_engineering_patch.py || true
+      - name: Upload evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: traceprivacy-${{ matrix.target }}-${{ matrix.scenario }}-${{ github.run_id }}
+          path: |
+            traceprivacy_output
+            traceprivacy_${{ env.TRACEPRIVACY_TARGET }}_${{ env.TRACEPRIVACY_SCENARIO_ID }}_${{ github.run_id }}.zip
+          if-no-files-found: warn
+          retention-days: 14
