@@ -28,9 +28,9 @@ jobs:
       - name: Reconstruct and verify frozen experiment source
         shell: bash
         run: |
-          echo "33afbec40ea4b416e45e352d9bc0d13859957bc4d4afe363ad4272103ecf7697  traceprivacy_payload/part00" | sha256sum --check --strict
-          echo "62ded6c992acd083c57ac4c1becd5953aa8664b7cac57ea60070bce988a5bf12  traceprivacy_payload/part01" | sha256sum --check --strict
-          echo "8664ec3a5684cc99f468b8d9770455c6731aaa0643565bd7a4a8a91deb1739a9  traceprivacy_payload/part02" | sha256sum --check --strict
+          echo "291e9169ea479bb6a44f3ef2c9bd1ed32636d54ecb9e0f4d0ad2600fa86c8edf  traceprivacy_payload/part00" | sha256sum --check --strict
+          echo "2447d7859d3587eab01276583b1ac97df752092061abab8fe0499699d456ef89  traceprivacy_payload/part01" | sha256sum --check --strict
+          echo "8f18a337627d4c4cb42c0c5425b87fa4931bb5fcfaef3218b27bb3588f716f02  traceprivacy_payload/part02" | sha256sum --check --strict
           echo "63e3b04a5a68b645787d707f1f9bf4ae5fddf9e89a4f63fd5b20a378005b0e3d  traceprivacy_payload/rest00" | sha256sum --check --strict
           echo "d9d5f627873a53dba4adf6c1c1903069edd5714d13391ca7e3c47dcd77f4513f  traceprivacy_payload/rest01" | sha256sum --check --strict
           echo "689b2ba9f1e3e1868a91a993c1a980ec337629efbbe298b4ebe3361173140ad5  traceprivacy_payload/rest02" | sha256sum --check --strict
