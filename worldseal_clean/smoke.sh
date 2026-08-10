@@ -4,7 +4,7 @@ ROOT="$GITHUB_WORKSPACE"
 OUT="$ROOT/worldseal_output"
 mkdir -p "$OUT" "$ROOT/repos"
 python -m pip install --upgrade pip wheel setuptools
-python -m pip install 'openai>=1.75,<2' 'httpx>=0.28,<1' 'numpy>=1.26,<3' 'pandas>=2.2,<3' 'scipy>=1.13,<2' 'scikit-learn>=1.5,<2' 'pydantic>=2.10,<3' 'pydantic-settings>=2.7,<3' python-dotenv requests filelock loguru fire fuzzywuzzy python-Levenshtein pyarrow rich tqdm typer matplotlib tables langchain langchain-community tiktoken litellm
+python -m pip install 'openai>=1.75,<3' 'httpx>=0.28,<1' 'numpy>=1.26,<3' 'pandas>=2.2,<3' 'scipy>=1.13,<2' 'scikit-learn>=1.5,<2' 'pydantic>=2.10,<3' 'pydantic-settings>=2.7,<3' python-dotenv requests filelock loguru fire fuzzywuzzy python-Levenshtein pyarrow rich tqdm typer matplotlib tables langchain langchain-community tiktoken 'litellm>=1.73,<1.81' dill humanize genson pandarallel networkx docker pymupdf pypdf
 clone_pin() {
   local slug="$1" dir="$2" sha="$3"
   rm -rf "$dir"
