@@ -1,0 +1,104 @@
+name: TracePrivacy real MAS kill test v2
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/traceprivacy-killtest-v2.yml'
+      - 'traceprivacy_engineering_patch.py'
+
+permissions:
+  contents: read
+  issues: write
+  actions: read
+
+jobs:
+  experiment:
+    runs-on: ubuntu-latest
+    timeout-minutes: 350
+    env:
+      TRACEPRIVACY_ISSUE_NUMBER: '25'
+      TRACEPRIVACY_MODE: 'pilot'
+      PYTHONPATH: ${{ github.workspace }}
+      PYTHONUNBUFFERED: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Reconstruct frozen source and apply audited engineering patch
+        shell: bash
+        run: |
+          cat > /tmp/chunks.sha256 <<'EOF'
+          291e9169ea479bb6a44f3ef2c9bd1ed32636d54ecb9e0f4d0ad2600fa86c8edf  traceprivacy_payload/part00
+          2447d7859d3587eab01276583b1ac97df752092061abab8fe0499699d456ef89  traceprivacy_payload/part01
+          8f18a337627d4c4cb42c0c5425b87fa4931bb5fcfaef3218b27bb3588f716f02  traceprivacy_payload/part02
+          63e3b04a5a68b645787d707f1f9bf4ae5fddf9e89a4f63fd5b20a378005b0e3d  traceprivacy_payload/rest00
+          d9d5f627873a53dba4adf6c1c1903069edd5714d13391ca7e3c47dcd77f4513f  traceprivacy_payload/rest01
+          689b2ba9f1e3e1868a91a993c1a980ec337629efbbe298b4ebe3361173140ad5  traceprivacy_payload/rest02
+          a1ac817dce7277a74e7e73d79c957500e5e4ccb3344473171a497b05bea5dc63  traceprivacy_payload/rest03
+          589818751664791ec8b444e0545539c075dfd727e36d5bf9122bdc86a49932da  traceprivacy_payload/rest04
+          80cc0e23874428c357075339ee0f765ef2f518a7c9bf9ed8caee1c71af020961  traceprivacy_payload/rest05
+          EOF
+          sha256sum --check --strict /tmp/chunks.sha256
+          cat traceprivacy_payload/part00 traceprivacy_payload/part01 traceprivacy_payload/part02 traceprivacy_payload/rest00 traceprivacy_payload/rest01 traceprivacy_payload/rest02 traceprivacy_payload/rest03 traceprivacy_payload/rest04 traceprivacy_payload/rest05 > /tmp/traceprivacy_payload.b64
+          echo '62191da485d3f4beb61c5b5ee2a09f52aa045fb7b72420fa05c2d6f844788a1f  /tmp/traceprivacy_payload.b64' | sha256sum --check --strict
+          base64 --decode /tmp/traceprivacy_payload.b64 > /tmp/traceprivacy_payload.tar.gz
+          echo 'ae32b287e587ed664418c40e39ffdc6f41191082a4db713e87b4573906629404  /tmp/traceprivacy_payload.tar.gz' | sha256sum --check --strict
+          tar -xzf /tmp/traceprivacy_payload.tar.gz
+          echo '2e24ff74c5199a38e5fa501926641d64dc2c4bcab6b1b2acfcdae69afa558e3d  traceprivacy_engineering_patch.py' | sha256sum --check --strict
+          python traceprivacy_engineering_patch.py
+          echo 'a42eaa86a6723042d1b2e9fa70e61f2bb366e8e7763dff58296850255d9ee1d6  trace_privacy/common.py' | sha256sum --check --strict
+          echo '9499ed561947ea28bd86c297bff91506d9b1242e300567bc663ae74d765672ae  trace_privacy/tradingagents_runner.py' | sha256sum --check --strict
+          chmod +x credential_bootstrap.sh
+          python -m py_compile trace_privacy/*.py traceprivacy_engineering_patch.py
+      - name: Install capture and Python dependencies
+        shell: bash
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq tcpdump
+          sudo sysctl -w net.ipv6.conf.all.disable_ipv6=1 || true
+          python -m pip install --upgrade pip wheel setuptools
+          python -m pip install 'openai>=2.0,<3' 'scikit-learn>=1.5,<2' pandas numpy colorama questionary python-dateutil tabulate
+      - name: Clone and pin real MAS repositories
+        shell: bash
+        run: |
+          mkdir -p repos
+          git clone -q https://github.com/TauricResearch/TradingAgents.git repos/TradingAgents
+          git -C repos/TradingAgents checkout -q a33fd4c0f134485a43553a2c23a63cb14adbd88f
+          git clone -q https://github.com/zhound420/swarm-trader.git repos/swarm-trader
+          git -C repos/swarm-trader checkout -q 3470b8291c438dc36b22ed37b7e56ba2bbf249b5
+          python -m pip install -e repos/TradingAgents
+          test "$(git -C repos/TradingAgents rev-parse HEAD)" = 'a33fd4c0f134485a43553a2c23a63cb14adbd88f'
+          test "$(git -C repos/swarm-trader rev-parse HEAD)" = '3470b8291c438dc36b22ed37b7e56ba2bbf249b5'
+      - name: Record frozen source manifest
+        shell: bash
+        run: sha256sum trace_privacy/*.py credential_bootstrap.sh traceprivacy_engineering_patch.py > SOURCE_SHA256SUMS.txt
+      - name: Credential-isolated real experiments
+        shell: bash
+        run: bash credential_bootstrap.sh
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Require hard-verification marker
+        if: success()
+        run: test -f traceprivacy_output/PILOT_COMPLETE_SUCCESS.marker
+      - name: Package all evidence
+        if: always()
+        shell: bash
+        run: |
+          mkdir -p traceprivacy_output
+          cp SOURCE_SHA256SUMS.txt traceprivacy_output/ 2>/dev/null || true
+          zip -q -r "traceprivacy_pilot_v2_${GITHUB_RUN_ID}.zip" traceprivacy_output trace_privacy credential_bootstrap.sh traceprivacy_engineering_patch.py SOURCE_SHA256SUMS.txt || true
+      - name: Upload evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: traceprivacy-pilot-v2-${{ github.run_id }}
+          path: |
+            traceprivacy_output
+            traceprivacy_pilot_v2_${{ github.run_id }}.zip
+            trace_privacy
+            credential_bootstrap.sh
+            traceprivacy_engineering_patch.py
+            SOURCE_SHA256SUMS.txt
+          if-no-files-found: warn
+          retention-days: 14
