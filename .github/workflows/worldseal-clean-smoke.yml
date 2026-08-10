@@ -1,0 +1,36 @@
+name: WorldSeal clean smoke
+on:
+  push:
+    branches: [worldseal-clean-rerun-20260810]
+    paths:
+      - '.github/workflows/worldseal-clean-smoke.yml'
+      - 'worldseal_clean/credential_bootstrap.sh'
+      - 'worldseal_clean/smoke.sh'
+      - 'worldseal_clean/smoke.py'
+permissions:
+  contents: read
+  issues: write
+  actions: read
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      WORLDSEAL_ISSUE_NUMBER: '24'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Credential-isolated smoke test
+        run: bash worldseal_clean/credential_bootstrap.sh smoke
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Upload smoke evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: worldseal-clean-smoke-${{ github.run_id }}
+          path: worldseal_output
+          if-no-files-found: warn
+          retention-days: 7
