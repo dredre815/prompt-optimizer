@@ -1,0 +1,173 @@
+name: False Diversification hard GO-NO-GO experiment v2
+
+on:
+  push:
+    branches: [false-diversification-killtest-20260811]
+    paths:
+      - '.github/workflows/false-diversification-v2.yml'
+      - 'false_diversification_payload/**'
+      - 'false_diversification_fix/**'
+
+permissions:
+  contents: read
+  issues: write
+  actions: read
+
+jobs:
+  experiment:
+    strategy:
+      fail-fast: false
+      matrix:
+        system: [tradingagents, swarm]
+    runs-on: ubuntu-latest
+    timeout-minutes: 350
+    env:
+      FD_ISSUE_NUMBER: '26'
+      FD_SYSTEM: ${{ matrix.system }}
+      PYTHONUNBUFFERED: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Reconstruct and hard-verify experiment source
+        shell: bash
+        run: |
+          cat false_diversification_payload/part00 \
+              false_diversification_fix/part01_0 \
+              false_diversification_fix/part01_1 \
+              false_diversification_fix/part01_2 \
+              false_diversification_fix/part02_0 \
+              false_diversification_fix/part02_1 \
+              false_diversification_fix/part02_2 \
+              false_diversification_payload/part03 \
+              false_diversification_payload/part04 \
+              false_diversification_payload/part05 \
+              false_diversification_payload/part06 \
+              false_diversification_payload/part07 \
+              false_diversification_payload/part08 \
+              false_diversification_payload/part09 > /tmp/fd_payload.b64
+          echo "138bc4b77bd747ef57e106588534c02bcaed985fff4df938099c4b1000480e7f  /tmp/fd_payload.b64" | sha256sum --check --strict
+          base64 --decode /tmp/fd_payload.b64 > /tmp/fd_payload.tar.gz
+          echo "00d74da76b91c53601fb6833a2d7ceeb916c0484217e3e9829d0fe7800652725  /tmp/fd_payload.tar.gz" | sha256sum --check --strict
+          mkdir -p false_diversification
+          tar -xzf /tmp/fd_payload.tar.gz -C false_diversification
+          python -m py_compile false_diversification/common.py false_diversification/run_tradingagents.py false_diversification/run_swarm.py false_diversification/verify_system.py false_diversification/analyze.py
+          python -m json.tool false_diversification/scenarios.json >/dev/null
+          chmod +x false_diversification/credential_bootstrap.sh false_diversification/run_system.sh
+      - name: Install common dependencies
+        run: |
+          python -m pip install --upgrade pip wheel setuptools
+          python -m pip install 'openai>=1.75,<3' 'numpy>=1.26,<3' 'pandas>=2.2,<3' 'scipy>=1.13,<2' 'scikit-learn>=1.5,<2'
+      - name: Install pinned official target
+        shell: bash
+        run: |
+          mkdir -p repos
+          if [[ "$FD_SYSTEM" == "tradingagents" ]]; then
+            git clone --filter=blob:none https://github.com/TauricResearch/TradingAgents.git repos/TradingAgents
+            git -C repos/TradingAgents fetch --depth 1 origin a33fd4c0f134485a43553a2c23a63cb14adbd88f
+            git -C repos/TradingAgents checkout --detach a33fd4c0f134485a43553a2c23a63cb14adbd88f
+            test "$(git -C repos/TradingAgents rev-parse HEAD)" = "a33fd4c0f134485a43553a2c23a63cb14adbd88f"
+            python -m pip install -e repos/TradingAgents
+          else
+            git clone --filter=blob:none https://github.com/zhound420/swarm-trader.git repos/swarm-trader
+            git -C repos/swarm-trader fetch --depth 1 origin 3470b8291c438dc36b22ed37b7e56ba2bbf249b5
+            git -C repos/swarm-trader checkout --detach 3470b8291c438dc36b22ed37b7e56ba2bbf249b5
+            test "$(git -C repos/swarm-trader rev-parse HEAD)" = "3470b8291c438dc36b22ed37b7e56ba2bbf249b5"
+            python -m pip install -e repos/swarm-trader
+          fi
+      - name: Credential-isolated official MAS and matched-baseline runs
+        shell: bash
+        run: bash false_diversification/credential_bootstrap.sh
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Require system hard-verification marker
+        if: success()
+        run: test -f "false_diversification_output/${FD_SYSTEM}/${FD_SYSTEM^^}_SYSTEM_SUCCESS.marker"
+      - name: Package raw evidence
+        if: always()
+        shell: bash
+        run: |
+          if [ -d "false_diversification_output/${FD_SYSTEM}" ]; then
+            zip -q -r "false_diversification_raw_${FD_SYSTEM}.zip" "false_diversification_output/${FD_SYSTEM}"
+          fi
+      - name: Upload raw evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: fd-v2-raw-${{ matrix.system }}-${{ github.run_id }}
+          path: |
+            false_diversification_output/${{ matrix.system }}
+            false_diversification_raw_${{ matrix.system }}.zip
+          if-no-files-found: error
+          retention-days: 14
+
+  analyze:
+    needs: experiment
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Reconstruct verified analysis source
+        shell: bash
+        run: |
+          cat false_diversification_payload/part00 \
+              false_diversification_fix/part01_0 \
+              false_diversification_fix/part01_1 \
+              false_diversification_fix/part01_2 \
+              false_diversification_fix/part02_0 \
+              false_diversification_fix/part02_1 \
+              false_diversification_fix/part02_2 \
+              false_diversification_payload/part03 \
+              false_diversification_payload/part04 \
+              false_diversification_payload/part05 \
+              false_diversification_payload/part06 \
+              false_diversification_payload/part07 \
+              false_diversification_payload/part08 \
+              false_diversification_payload/part09 > /tmp/fd_payload.b64
+          echo "138bc4b77bd747ef57e106588534c02bcaed985fff4df938099c4b1000480e7f  /tmp/fd_payload.b64" | sha256sum --check --strict
+          base64 --decode /tmp/fd_payload.b64 > /tmp/fd_payload.tar.gz
+          echo "00d74da76b91c53601fb6833a2d7ceeb916c0484217e3e9829d0fe7800652725  /tmp/fd_payload.tar.gz" | sha256sum --check --strict
+          mkdir -p false_diversification
+          tar -xzf /tmp/fd_payload.tar.gz -C false_diversification
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: fd-v2-raw-*
+          path: downloaded_raw
+          merge-multiple: true
+      - name: Install analysis dependencies
+        run: python -m pip install 'numpy>=1.26,<3' 'pandas>=2.2,<3' 'scipy>=1.13,<2' 'openai>=1.75,<3'
+      - name: Fail-closed aggregate analysis
+        shell: bash
+        run: |
+          python false_diversification/analyze.py --input downloaded_raw --output final_analysis
+          test -f final_analysis/COMPLETE_SUCCESS.marker
+          test -f final_analysis/HARD_VERIFICATION.json
+          python - <<'PY'
+          from pathlib import Path
+          import re
+          roots=[Path('final_analysis'),Path('downloaded_raw')]
+          pat=re.compile(rb'sk-[A-Za-z0-9_-]{20,}')
+          bad=[]
+          for root in roots:
+              for p in root.rglob('*'):
+                  if p.is_file() and pat.search(p.read_bytes()):
+                      bad.append(str(p))
+          if bad:
+              raise SystemExit('credential-like strings found: '+','.join(bad))
+          PY
+          find final_analysis -type f -print0 | sort -z | xargs -0 sha256sum > final_analysis/SHA256SUMS.txt
+          zip -q -r False_Diversification_KillTest_Artifact.zip final_analysis downloaded_raw false_diversification
+      - name: Upload final analysis
+        uses: actions/upload-artifact@v4
+        with:
+          name: fd-v2-final-${{ github.run_id }}
+          path: |
+            final_analysis
+            False_Diversification_KillTest_Artifact.zip
+          if-no-files-found: error
+          retention-days: 14
