@@ -1,0 +1,106 @@
+name: False Diversification verified raw experiments v4
+
+on:
+  push:
+    branches: [false-diversification-killtest-20260811]
+    paths:
+      - '.github/workflows/false-diversification-v4-raw.yml'
+      - 'false_diversification_payload/**'
+      - 'false_diversification_fix/**'
+      - 'false_diversification_runtime_patch_v2.py'
+
+permissions:
+  contents: read
+  issues: write
+  actions: read
+
+jobs:
+  experiment:
+    strategy:
+      fail-fast: false
+      matrix:
+        system: [tradingagents, swarm]
+    runs-on: ubuntu-latest
+    timeout-minutes: 350
+    env:
+      FD_ISSUE_NUMBER: '26'
+      FD_SYSTEM: ${{ matrix.system }}
+      PYTHONUNBUFFERED: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Reconstruct, patch, and hard-verify source
+        shell: bash
+        run: |
+          cat false_diversification_payload/part00 \
+              false_diversification_fix/part01_0 \
+              false_diversification_fix/part01_1 \
+              false_diversification_fix/part01_2 \
+              false_diversification_fix/part02_0 \
+              false_diversification_fix/part02_1 \
+              false_diversification_fix/part02_2 \
+              false_diversification_payload/part03 \
+              false_diversification_payload/part04 \
+              false_diversification_payload/part05 \
+              false_diversification_payload/part06 \
+              false_diversification_payload/part07 \
+              false_diversification_payload/part08 \
+              false_diversification_payload/part09 > /tmp/fd_payload.b64
+          echo "138bc4b77bd747ef57e106588534c02bcaed985fff4df938099c4b1000480e7f  /tmp/fd_payload.b64" | sha256sum --check --strict
+          base64 --decode /tmp/fd_payload.b64 > /tmp/fd_payload.tar.gz
+          echo "00d74da76b91c53601fb6833a2d7ceeb916c0484217e3e9829d0fe7800652725  /tmp/fd_payload.tar.gz" | sha256sum --check --strict
+          echo "0409e95c3de041db239ad6ad4f11eeac772becbcc1332462b424944cdc124e8e  false_diversification_runtime_patch_v2.py" | sha256sum --check --strict
+          mkdir -p false_diversification
+          tar -xzf /tmp/fd_payload.tar.gz -C false_diversification
+          python false_diversification_runtime_patch_v2.py
+          python -m py_compile false_diversification/common.py false_diversification/run_tradingagents.py false_diversification/run_swarm.py false_diversification/verify_system.py false_diversification/analyze.py
+          python -m json.tool false_diversification/scenarios.json >/dev/null
+          chmod +x false_diversification/credential_bootstrap.sh false_diversification/run_system.sh
+      - name: Install common dependencies
+        run: |
+          python -m pip install --upgrade pip wheel setuptools
+          python -m pip install 'openai>=1.75,<3' 'numpy>=1.26,<3' 'pandas>=2.2,<3' 'scipy>=1.13,<2' 'scikit-learn>=1.5,<2'
+      - name: Install pinned official target
+        shell: bash
+        run: |
+          mkdir -p repos
+          if [[ "$FD_SYSTEM" == "tradingagents" ]]; then
+            git clone --filter=blob:none https://github.com/TauricResearch/TradingAgents.git repos/TradingAgents
+            git -C repos/TradingAgents fetch --depth 1 origin a33fd4c0f134485a43553a2c23a63cb14adbd88f
+            git -C repos/TradingAgents checkout --detach a33fd4c0f134485a43553a2c23a63cb14adbd88f
+            test "$(git -C repos/TradingAgents rev-parse HEAD)" = "a33fd4c0f134485a43553a2c23a63cb14adbd88f"
+            python -m pip install -e repos/TradingAgents
+          else
+            git clone --filter=blob:none https://github.com/zhound420/swarm-trader.git repos/swarm-trader
+            git -C repos/swarm-trader fetch --depth 1 origin 3470b8291c438dc36b22ed37b7e56ba2bbf249b5
+            git -C repos/swarm-trader checkout --detach 3470b8291c438dc36b22ed37b7e56ba2bbf249b5
+            test "$(git -C repos/swarm-trader rev-parse HEAD)" = "3470b8291c438dc36b22ed37b7e56ba2bbf249b5"
+            python -m pip install -e repos/swarm-trader
+          fi
+      - name: Credential-isolated official MAS and matched-baseline runs
+        shell: bash
+        run: bash false_diversification/credential_bootstrap.sh
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Require system hard-verification marker
+        if: success()
+        run: test -f "false_diversification_output/${FD_SYSTEM}/${FD_SYSTEM^^}_SYSTEM_SUCCESS.marker"
+      - name: Package raw evidence
+        if: always()
+        shell: bash
+        run: |
+          if [ -d "false_diversification_output/${FD_SYSTEM}" ]; then
+            zip -q -r "false_diversification_raw_${FD_SYSTEM}.zip" "false_diversification_output/${FD_SYSTEM}"
+          fi
+      - name: Upload raw evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: fd-v4-raw-${{ matrix.system }}-${{ github.run_id }}
+          path: |
+            false_diversification_output/${{ matrix.system }}
+            false_diversification_raw_${{ matrix.system }}.zip
+          if-no-files-found: error
+          retention-days: 14
