@@ -8,6 +8,7 @@ on:
       - 'false_diversification_payload/**'
       - 'false_diversification_fix/**'
       - 'false_diversification_runtime_patch_v4.py'
+      - 'false_diversification_runtime_patch_v5.py'
 
 permissions:
   contents: read
@@ -48,9 +49,11 @@ jobs:
           base64 --decode /tmp/fd_payload.b64 > /tmp/fd_payload.tar.gz
           echo "00d74da76b91c53601fb6833a2d7ceeb916c0484217e3e9829d0fe7800652725  /tmp/fd_payload.tar.gz" | sha256sum --check --strict
           test "$(git hash-object false_diversification_runtime_patch_v4.py)" = "3533418247bc6a4426747e37189c54483b8979e9"
+          test "$(git hash-object false_diversification_runtime_patch_v5.py)" = "bf985014ef49fedfc81a08590c76036733339e0e"
           mkdir -p false_diversification
           tar -xzf /tmp/fd_payload.tar.gz -C false_diversification
           python false_diversification_runtime_patch_v4.py
+          python false_diversification_runtime_patch_v5.py
           python -m py_compile false_diversification/common.py false_diversification/run_tradingagents.py false_diversification/verify_system.py false_diversification/analyze.py
           python -m json.tool false_diversification/scenarios.json >/dev/null
           chmod +x false_diversification/credential_bootstrap.sh false_diversification/run_system.sh
