@@ -1,0 +1,96 @@
+name: False Diversification v6 status collector
+
+on:
+  push:
+    branches: [false-diversification-killtest-20260811]
+    paths:
+      - '.github/workflows/false-diversification-status-collector.yml'
+
+permissions:
+  contents: read
+  actions: read
+  issues: write
+
+jobs:
+  collect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 355
+    steps:
+      - uses: actions/checkout@v4
+      - name: Wait for latest target-only v6 runs and collect exact status
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -Eeuo pipefail
+          python - <<'PY'
+          import json, os, subprocess, time
+          repo=os.environ['GITHUB_REPOSITORY']
+          specs={
+            'swarm': 'false-diversification-swarm-v6.yml',
+            'tradingagents': 'false-diversification-ta-v6.yml',
+          }
+          out={}
+          for system,wf in specs.items():
+              run=None
+              for _ in range(2100):
+                  raw=subprocess.check_output([
+                      'gh','api',f'repos/{repo}/actions/workflows/{wf}/runs',
+                      '-f','branch=false-diversification-killtest-20260811',
+                      '-f','per_page=5',
+                  ], text=True)
+                  runs=json.loads(raw).get('workflow_runs',[])
+                  if runs:
+                      run=runs[0]
+                      if run.get('status')=='completed':
+                          break
+                  time.sleep(10)
+              if not run:
+                  out[system]={'error':'no workflow run found'}
+                  continue
+              rid=run['id']
+              details=json.loads(subprocess.check_output(
+                  ['gh','api',f'repos/{repo}/actions/runs/{rid}'], text=True))
+              jobs=json.loads(subprocess.check_output(
+                  ['gh','api',f'repos/{repo}/actions/runs/{rid}/jobs','-f','per_page=100'], text=True)).get('jobs',[])
+              arts=json.loads(subprocess.check_output(
+                  ['gh','api',f'repos/{repo}/actions/runs/{rid}/artifacts','-f','per_page=100'], text=True)).get('artifacts',[])
+              out[system]={
+                  'run_id': rid,
+                  'status': details.get('status'),
+                  'conclusion': details.get('conclusion'),
+                  'head_sha': details.get('head_sha'),
+                  'created_at': details.get('created_at'),
+                  'updated_at': details.get('updated_at'),
+                  'jobs': [{
+                      'id':j.get('id'),'name':j.get('name'),'status':j.get('status'),'conclusion':j.get('conclusion'),
+                      'steps':[{'name':s.get('name'),'status':s.get('status'),'conclusion':s.get('conclusion')} for s in j.get('steps',[])]
+                  } for j in jobs],
+                  'artifacts': [{'id':a.get('id'),'name':a.get('name'),'size_in_bytes':a.get('size_in_bytes'),'expired':a.get('expired'),'digest':a.get('digest')} for a in arts],
+              }
+          with open('fd_v6_status.json','w',encoding='utf-8') as f:
+              json.dump(out,f,indent=2,sort_keys=True)
+          print(json.dumps(out,indent=2,sort_keys=True))
+          PY
+      - name: Post concise machine-readable status
+        if: always()
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if [ -f fd_v6_status.json ]; then
+            {
+              echo 'FALSE_DIVERSIFICATION_V6_STATUS_V1'
+              echo '```json'
+              cat fd_v6_status.json
+              echo '```'
+            } > status_comment.txt
+            gh issue comment 26 --repo "$GITHUB_REPOSITORY" --body-file status_comment.txt
+          fi
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: fd-v6-status-${{ github.run_id }}
+          path: fd_v6_status.json
+          if-no-files-found: error
+          retention-days: 14
