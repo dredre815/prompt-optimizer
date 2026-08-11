@@ -1,4 +1,4 @@
-name: False Diversification verified raw experiments v4
+name: False Diversification verified raw experiments v5
 
 on:
   push:
@@ -7,7 +7,7 @@ on:
       - '.github/workflows/false-diversification-v4-raw.yml'
       - 'false_diversification_payload/**'
       - 'false_diversification_fix/**'
-      - 'false_diversification_runtime_patch_v2.py'
+      - 'false_diversification_runtime_patch_v3.py'
 
 permissions:
   contents: read
@@ -51,10 +51,10 @@ jobs:
           echo "138bc4b77bd747ef57e106588534c02bcaed985fff4df938099c4b1000480e7f  /tmp/fd_payload.b64" | sha256sum --check --strict
           base64 --decode /tmp/fd_payload.b64 > /tmp/fd_payload.tar.gz
           echo "00d74da76b91c53601fb6833a2d7ceeb916c0484217e3e9829d0fe7800652725  /tmp/fd_payload.tar.gz" | sha256sum --check --strict
-          echo "0409e95c3de041db239ad6ad4f11eeac772becbcc1332462b424944cdc124e8e  false_diversification_runtime_patch_v2.py" | sha256sum --check --strict
+          echo "85ed6fdf90e721bb129e4ae6dc8e00ceee86753967a62eb5b1bcb2cda01c985b  false_diversification_runtime_patch_v3.py" | sha256sum --check --strict
           mkdir -p false_diversification
           tar -xzf /tmp/fd_payload.tar.gz -C false_diversification
-          python false_diversification_runtime_patch_v2.py
+          python false_diversification_runtime_patch_v3.py
           python -m py_compile false_diversification/common.py false_diversification/run_tradingagents.py false_diversification/run_swarm.py false_diversification/verify_system.py false_diversification/analyze.py
           python -m json.tool false_diversification/scenarios.json >/dev/null
           chmod +x false_diversification/credential_bootstrap.sh false_diversification/run_system.sh
@@ -98,7 +98,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: fd-v4-raw-${{ matrix.system }}-${{ github.run_id }}
+          name: fd-v5-raw-${{ matrix.system }}-${{ github.run_id }}
           path: |
             false_diversification_output/${{ matrix.system }}
             false_diversification_raw_${{ matrix.system }}.zip
