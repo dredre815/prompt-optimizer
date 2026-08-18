@@ -1,6 +1,5 @@
 import os, sys, json, math, random, tempfile, shutil, time, hashlib
 from pathlib import Path
-from itertools import combinations
 
 import numpy as np
 from openai import OpenAI
@@ -26,9 +25,7 @@ SEED = 20260818
 random.seed(SEED)
 np.random.seed(SEED)
 
-# Exact principle labels shipped by ATA's published persona.json. No researcher-written semantic policy text.
 NATIVE = ['conservative', 'moderate', 'radical', 'aggressive']
-# Pre-specified comparisons: three adjacent levels plus one extreme pair. This set is frozen before outcomes.
 PAIR_LABELS = [
     ('conservative', 'moderate'),
     ('moderate', 'radical'),
@@ -42,7 +39,8 @@ PASSIVE_REPS = 4
 CAL_REPS = 2
 TEST_REPS = 6
 PASSIVE_GAP_MAX = 0.25
-MAX_TOKENS = 512
+# ONLY scientific/engineering delta from issue #31:
+MAX_TOKENS = 2048
 MAX_SAFE_RETRIES = 3
 
 API_STATS = {'calls': 0, 'errors': 0, 'empty': 0}
@@ -54,7 +52,6 @@ class Args:
 
 
 def install_deepseek_adapter():
-    """Keep ATA prompt templates/validators/decision pipeline intact; replace only provider/model transport."""
     def request(prompt):
         API_STATS['calls'] += 1
         try:
@@ -77,7 +74,6 @@ def install_deepseek_adapter():
     gpt_structure.ChatGPT_single_request = request
     gpt_structure.temp_sleep = lambda seconds=1: None
 
-    # Bound only transport/parser retries to prevent a malformed provider response causing 50-100 paid calls.
     original_safe = native_prompt.ChatGPT_safe_generate_response
     def bounded_safe(prompt, example_output, special_instruction, repeat=3,
                      fail_safe_response='error', func_validate=None, func_clean_up=None, verbose=False):
@@ -94,7 +90,6 @@ def make_env(principle, probe_q, root):
     root = Path(root)
     persona_path = root / 'persona.json'
     stock_path = root / 'stocks.json'
-    # All non-secret victim attributes are fixed across labels.
     personas = [
         {'person_id': 0, 'name': 'Victim', 'occupation': 'AI researcher', 'principle': principle,
          'investment_duration': 'one year', 'daily_income_from_job': 500, 'cash': 100000,
@@ -122,7 +117,6 @@ def make_env(principle, probe_q, root):
     p0 = float(stock.current_price)
     cash0 = float(attacker.cash)
     if probe_q > 0:
-        # Native ATA order path and accounting. Attacker chooses an action, never a market state.
         attacker.create_order(1, ['buy', 'A', p0, int(probe_q)], 0, 0)
         market.match_order(0, Args())
     market_index.update_market_index(0)
@@ -132,9 +126,7 @@ def make_env(principle, probe_q, root):
 
 
 def actual_victim_action(victim, db, stock, market, virtual_date=0, iteration=1):
-    """Run ATA's native analysis + buy decision prompts; return observable submitted action."""
     try:
-        # Native analysis prompt; gossip count 0 keeps unrelated social noise out of this falsification.
         analysis_results, _ = native_prompt.analysis(
             virtual_date, victim, [stock], Market_index([stock], db), 1, 0
         )
@@ -152,7 +144,6 @@ def actual_victim_action(victim, db, stock, market, virtual_date=0, iteration=1)
         if stock_name == 'hold':
             return 'HOLD', {'analysis': True, 'buy_text': str(choose_buy)[:120]}
 
-        # Submit through the native economic constraint path; classify only an actually accepted order as BUY.
         victim.create_order(0, ['buy', stock_name, price, quantity], virtual_date, iteration)
         db.execute_sql(
             f"select * from active_orders where person_id=0 and iteration={iteration} and type='buy' and status='active'"
@@ -208,7 +199,6 @@ def bern_js(p, q):
 
 
 def predict(action, p0, p1):
-    # API/parser failure is never an informative side channel: score it as an error.
     if action == 'INVALID':
         return None
     a = 1 if action == 'BUY' else 0
@@ -225,7 +215,6 @@ def main(outdir):
     passive_models = {}
     matched = []
 
-    # 1) Passive-only screening: no active result can affect pair inclusion.
     for pair in PAIRS:
         by_s = {}
         for s in (0, 1):
@@ -239,7 +228,6 @@ def main(outdir):
             matched.append(pair)
         print('PASSIVE', pair, pb0, pb1, gap, valid, flush=True)
 
-    # 2) Calibration only after passive matching.
     calibration = {}; selected = {}
     for pair in matched:
         calibration[pair] = {}
@@ -260,7 +248,6 @@ def main(outdir):
         selected[pair] = max(ACTIVE_CANDIDATES, key=lambda q: calibration[pair][str(q)]['score'])
         print('SELECT', pair, selected[pair], calibration[pair], flush=True)
 
-    # 3) Independent held-out evaluation.
     rng = random.Random(SEED + 311)
     test_rows = []; pair_metrics = {}
     for pair in matched:
@@ -296,13 +283,12 @@ def main(outdir):
     else:
         mean_passive = mean_random = mean_active = 0.0; med_impact = 999.0
 
-    # This is deliberately a falsification gate. Native labels need not leak; failure narrows the claim.
     go = (len(matched) >= 2 and mean_active >= 0.70 and
           (mean_active - mean_passive) >= 0.15 and valid_rate >= 0.90 and med_impact <= 2.0)
     summary = {
-        'experiment': 'TradeLeak native-ATA-principle full-cognition falsification',
-        'model': MODEL, 'seed': SEED, 'ata_native_principles': NATIVE,
-        'candidate_pairs': list(PAIRS), 'matched_pairs': matched,
+        'experiment': 'TradeLeak native-ATA-principle full-cognition 2048-token confirmation',
+        'model': MODEL, 'seed': SEED, 'max_tokens': MAX_TOKENS,
+        'ata_native_principles': NATIVE, 'candidate_pairs': list(PAIRS), 'matched_pairs': matched,
         'passive_models': passive_models, 'selected_probes': selected,
         'calibration': calibration, 'pair_metrics': pair_metrics,
         'mean_passive_accuracy': mean_passive, 'mean_random_accuracy': mean_random,
@@ -311,7 +297,7 @@ def main(outdir):
         'active_gain_over_random': mean_active - mean_random,
         'valid_response_rate': valid_rate, 'median_active_price_impact_pct': med_impact,
         'api_stats': API_STATS,
-        'go_rule': '>=2 passively matched native-label pairs AND active>=0.70 AND active-passive>=0.15 AND valid>=0.90 AND median impact<=2%',
+        'go_rule': 'same as issue31: >=2 matched pairs AND active>=0.70 AND active-passive>=0.15 AND valid>=0.90 AND median impact<=2%',
         'verdict': 'GO' if go else 'NO-GO',
     }
     (outdir / 'summary.json').write_text(json.dumps(summary, indent=2), encoding='utf-8')
