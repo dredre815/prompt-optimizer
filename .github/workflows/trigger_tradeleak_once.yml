@@ -1,0 +1,27 @@
+name: Trigger TradeLeak Once
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/trigger_tradeleak_once.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  trigger:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Touch TradeLeak workflow metadata
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git update-index --chmod=-x .github/workflows/tradeleak_ata_ephemeral.yml
+          git commit -m 'chore: activate TradeLeak ATA workflow'
+          git push origin HEAD:main
