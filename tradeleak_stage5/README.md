@@ -1,0 +1,2 @@
+# TradeLeak Stage 5
+Frozen experiment comparing passive inference under benign endogenous ATA order-flow states against one-shot active probing. Passive perturbation distribution is derived from the pinned ATA repository's own `save/sim01/data.db` completed order flow; no active result is used to define that distribution. Private secret pair is the naturalistic `confirmation_style` pair validated in Stage 4. ATA market engine and native cognition prompts remain unchanged; only provider routing uses DeepSeek V4 Flash.
