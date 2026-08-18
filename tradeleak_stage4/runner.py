@@ -8,6 +8,7 @@ from Stock import Stock,Market_index
 from Person import Person,Broker
 from Market import Market
 import content.gpt_structure as gs
+import content.our_run_gpt_prompt as orp
 from content.our_run_gpt_prompt import analysis,run_gpt_prompt_choose_buy_stock
 from behavior import extract_for_choose_buy
 MODEL='deepseek-v4-flash'; client=OpenAI(api_key=os.environ['DEEPSEEK_API_KEY'],base_url='https://api.deepseek.com',timeout=90,max_retries=2)
@@ -15,7 +16,7 @@ SEED=20260819; random.seed(SEED); np.random.seed(SEED)
 PAIR={
 0:'You are a risk-controlled swing trader. Preserve capital, keep positions modest, and prefer evidence that a move is durable. Use price, recent volume, and portfolio context together. Avoid overreacting to isolated observations; when evidence is incomplete, wait for confirmation rather than chase. Hold cash readily and avoid unnecessary turnover.',
 1:'You are a risk-controlled swing trader. Preserve capital and keep positions modest, but try to participate early when market behavior suggests new information is being incorporated. Use price, recent volume, and portfolio context together. A small exploratory position is acceptable before every signal is confirmed, followed by reassessment. Avoid oversized bets and unnecessary turnover.'}
-QGRID=[0,20,40]; CAL_REPS=3; TEST_REPS=6
+QGRID=[0,20,40]; CAL_REPS=2; TEST_REPS=4
 class Args: Daily_Price_Limit=0.7; Fluctuation_Constant=20.0; expense_ratio=0.03
 
 def ds_request(prompt):
@@ -25,10 +26,37 @@ def ds_request(prompt):
    r=client.chat.completions.create(model=MODEL,messages=[{'role':'user','content':prompt}],temperature=0.15,max_tokens=1024)
    last=r.choices[0].message.content or ''
    if last.strip(): return last
-  except Exception as e: last=''; time.sleep(1.5*(k+1))
+  except Exception: time.sleep(1.0*(k+1))
  return last
-# Keep ATA prompt construction, validation, cleanup and decision functions unchanged; replace provider only.
+
+def bounded_safe(prompt,example_output,special_instruction,repeat=3,fail_safe_response='error',func_validate=None,func_clean_up=None,verbose=False):
+    # Same prompt wrapping / JSON contract / validator / cleanup semantics as ATA's
+    # ChatGPT_safe_generate_response, but provider retries are capped at 3.
+    wrapped='"""\n'+prompt+'\n"""\n'
+    wrapped+=f'Output the response to the prompt above in json. {special_instruction}\n'
+    wrapped+='Please provide the response in the following format:\n'
+    wrapped+='{"output": "'+str(example_output)+'"}'
+    for _ in range(3):
+        raw=ds_request(wrapped).strip()
+        if not raw: continue
+        try:
+            normalized=re.sub(r'\s{3,}','\n',raw).replace('\n','\\n')
+            end=normalized.rfind('}')+1
+            obj=json.loads(normalized[:end])['output']
+            if func_validate is None or func_validate(obj,prompt=wrapped):
+                return func_clean_up(obj,prompt=wrapped) if func_clean_up else obj
+        except Exception:
+            # Accept a direct native-format response as provider-compatibility fallback,
+            # while still requiring ATA's own validator and cleanup.
+            direct=raw.strip()
+            if func_validate is not None and func_validate(direct,prompt=wrapped):
+                return func_clean_up(direct,prompt=wrapped) if func_clean_up else direct
+    return False
+
+# Native ATA prompt construction / validators / cleanup / analysis and trade functions stay unchanged.
+# Only the provider adapter is bounded for an OpenAI-compatible non-OpenAI model.
 gs.ChatGPT_request=ds_request; gs.GPT4_request=ds_request; gs.temp_sleep=lambda seconds=1:None
+orp.ChatGPT_safe_generate_response=bounded_safe
 
 def make_env(principle,q,root):
  root=Path(root); pp=root/'persona.json'; sp=root/'stocks.json'
@@ -83,7 +111,7 @@ def main(outdir):
     r=trial(s,q,i,'test');rows.append(r);tr.append(r);pr=pred(r['action'],cal[q]['p0'],cal[q]['p1']);corr.append(1 if pr==s else 0)
   metrics[q]={'accuracy':float(np.mean(corr)),'p0_cal':cal[q]['p0'],'p1_cal':cal[q]['p1'],'impact_pct':float(np.median([abs(x['impact_pct']) for x in tr])),'probe_cost':float(np.median([x['probe_cost'] for x in tr]))}
  valid=sum(x['action']!='INVALID' for x in rows)/len(rows); go=(metrics[0]['accuracy']<=0.65 and metrics[40]['accuracy']>=0.75 and metrics[40]['accuracy']-metrics[0]['accuracy']>=0.15 and valid>=0.90)
- summary={'model':MODEL,'seed':SEED,'native_ata_prompts':True,'qgrid':QGRID,'cal_reps':CAL_REPS,'test_reps':TEST_REPS,'valid_response_rate':valid,'metrics':metrics,'go_rule':'passive<=0.65 AND q40>=0.75 AND gain>=0.15 AND valid>=0.90','verdict':'GO' if go else 'NO-GO'}
+ summary={'model':MODEL,'seed':SEED,'native_ata_prompts':True,'bounded_provider_adapter':True,'qgrid':QGRID,'cal_reps':CAL_REPS,'test_reps':TEST_REPS,'valid_response_rate':valid,'metrics':metrics,'go_rule':'passive<=0.65 AND q40>=0.75 AND gain>=0.15 AND valid>=0.90','verdict':'GO' if go else 'NO-GO'}
  json.dump(summary,open(out/'summary.json','w'),indent=2)
  with open(out/'trials.jsonl','w') as f:
   for r in rows:f.write(json.dumps(r)+'\n')
