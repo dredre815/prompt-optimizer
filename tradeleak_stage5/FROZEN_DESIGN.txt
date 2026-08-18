@@ -1,0 +1,9 @@
+Secret pair: confirmation_style (same naturalistic pair as Stage 4)
+Model: deepseek-v4-flash
+ATA commit: 6b49ee837ebc1fa0d5bf99d655dc3adc352a77d3
+Candidate signed actions: -40,-20,-10,-5,-2,-1,+1,+2,+5,+10,+20,+40
+Calibration repetitions: 2 per secret/action
+Passive sequences: 8 per secret, 5 benign market events each
+Active held-out repetitions: 10 per secret
+Passive market distribution: derived only from pinned ATA save/sim01/data.db completed net order flow, filtered to bounded <=40-share equivalent events
+Active-story decision rule: active one-query accuracy - passive one-event accuracy >= 0.15 AND passive median events to >=90% posterior > 1 AND valid response rate >=0.90
