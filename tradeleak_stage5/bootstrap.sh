@@ -17,7 +17,7 @@ PY
 then found=1;break;fi;sleep 5;done;[ "$found" -eq 1 ]||exit 2;base64 --decode "$C64">"$CBIN";openssl pkeyutl -decrypt -inkey "$PRIV" -in "$CBIN" -out "$KEYF" -pkeyopt rsa_padding_mode:oaep -pkeyopt rsa_oaep_md:sha256 -pkeyopt rsa_mgf1_md:sha256
 key="$(cat "$KEYF")";[[ "$key" == sk-* ]]||exit 3;echo "::add-mask::$key";export DEEPSEEK_API_KEY="$key";export OPENAI_API_KEY="$key";shred -u "$KEYF" 2>/dev/null||rm -f "$KEYF";[ -s "$ROOT/cid" ]&&GH_TOKEN="$GITHUB_TOKEN" gh api -X DELETE "repos/${GITHUB_REPOSITORY}/issues/comments/$(cat "$ROOT/cid")">/dev/null 2>&1||true
 python -m pip install --quiet --upgrade pip wheel setuptools;python -m pip install --quiet 'openai>=2,<3' numpy pandas matplotlib mplfinance timeout-decorator eventlet
-git clone --quiet https://github.com/MTMQuantAI/Agent-Trading-Arena.git "$ROOT/ata";git -C "$ROOT/ata" checkout --quiet "$ATA_COMMIT";export ATA_ROOT="$ROOT/ata";export TRADELEAK_STAGE5_OUT="$RESULTS";python "$GITHUB_WORKSPACE/tradeleak_stage5/runner.py"|tee "$RESULTS/execution.log";echo "$ATA_COMMIT">"$RESULTS/ata_commit.txt"
+git clone --quiet https://github.com/MTMQuantAI/Agent-Trading-Arena.git "$ROOT/ata";git -C "$ROOT/ata" checkout --quiet "$ATA_COMMIT";export ATA_ROOT="$ROOT/ata";export TRADELEAK_STAGE5_OUT="$RESULTS";python "$GITHUB_WORKSPACE/tradeleak_stage5/runner_v2.py"|tee "$RESULTS/execution.log";echo "$ATA_COMMIT">"$RESULTS/ata_commit.txt"
 python - "$RESULTS" "$key" <<'PY'
 from pathlib import Path
 import re,sys
@@ -29,6 +29,6 @@ for f in r.rglob('*'):
 PY
 python - "$RESULTS/summary.json" "$ROOT/res" <<'PY'
 import json,sys,os
-s=json.load(open(sys.argv[1]));open(sys.argv[2],'w').write('\n'.join(['TRADELEAK_STAGE5_RESULT_V1',f"run_id={os.environ.get('GITHUB_RUN_ID')}",f"model={s['model']}",f"valid_response_rate={s['valid_response_rate']}",f"active_q={s['active_q']}",f"active_one_query_accuracy={s['active_one_query_accuracy']}",f"passive_accuracy_by_observations={json.dumps(s['passive_accuracy_by_observations'],separators=(',',':'))}",f"passive_median_events_to_90pct={s['passive_median_events_to_90pct']}",f"active_story_supported={s['active_story_supported']}",f"passive_q_distribution={json.dumps(s['passive_q_distribution'],separators=(',',':'))}"])+'\n')
+s=json.load(open(sys.argv[1]));open(sys.argv[2],'w').write('\n'.join(['TRADELEAK_STAGE5_RESULT_V2',f"run_id={os.environ.get('GITHUB_RUN_ID')}",f"model={s['model']}",f"valid_response_rate={s['valid_response_rate']}",f"active_q={s['active_q']}",f"active_one_query_accuracy={s['active_one_query_accuracy']}",f"passive_accuracy_by_observations={json.dumps(s['passive_accuracy_by_observations'],separators=(',',':'))}",f"passive_median_events_to_90pct={s['passive_median_events_to_90pct']}",f"active_story_supported={s['active_story_supported']}",f"passive_q_distribution={json.dumps(s['passive_q_distribution'],separators=(',',':'))}"])+'\n')
 PY
 comment "$ROOT/res";unset DEEPSEEK_API_KEY OPENAI_API_KEY
