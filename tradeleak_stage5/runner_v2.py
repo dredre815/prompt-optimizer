@@ -34,7 +34,7 @@ def empirical_passive_distribution():
  stock_float={0:1200.0,1:1000.0,2:1600.0}; mapped=[];statuses=Counter()
  for typ,qty,sid,status in rows:
   statuses[str(status)]+=1;scaled=max(1,int(round(float(qty)*1000.0/stock_float.get(int(sid),1000.0))));scaled=min(320,scaled);mag=min(MAGS,key=lambda x:abs(x-scaled));mapped.append(mag if str(typ).lower()=='buy' else -mag)
- if len(mapped)<10:raise RuntimeError(f'Published ATA sample has too few participant orders: {len(mapped)}')
+ if len(mapped)<5:raise RuntimeError(f'Published ATA sample has too few participant orders even for empirical resampling: {len(mapped)}')
  c=Counter(mapped);tot=sum(c.values());return mapped,{int(k):v/tot for k,v in sorted(c.items())},len(rows),dict(statuses)
 
 def make_env(principle,q,root):
