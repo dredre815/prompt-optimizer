@@ -2,10 +2,11 @@
 set -Eeuo pipefail
 umask 077
 
-ISSUE_NUMBER="${TRADELEAK_STAGE2_ISSUE_NUMBER:-29}"
+# Hard-coded for this frozen PR experiment so the base workflow's Stage-2 env cannot redirect credentials.
+ISSUE_NUMBER="31"
 ATA_COMMIT="${ATA_COMMIT:-6b49ee837ebc1fa0d5bf99d655dc3adc352a77d3}"
 NONCE="${GITHUB_RUN_ID:-local}-${GITHUB_RUN_ATTEMPT:-1}-$(date +%s)"
-ROOT="$(mktemp -d /tmp/tradeleak-stage2-XXXXXX)"
+ROOT="$(mktemp -d /tmp/tradeleak-native-XXXXXX)"
 PRIVATE_KEY="$ROOT/private.pem"
 PUBLIC_KEY="$ROOT/public.pem"
 CIPHERTEXT_B64="$ROOT/ciphertext.b64"
@@ -38,6 +39,7 @@ openssl pkey -in "$PRIVATE_KEY" -pubout -out "$PUBLIC_KEY"
   echo "run_id=${GITHUB_RUN_ID:-unknown}"
   echo "requested_model=deepseek-v4-flash"
   echo "ata_commit=$ATA_COMMIT"
+  echo "purpose=native-ata-principle-full-cognition-falsification"
   echo "TRADELEAK_STAGE2_PUBLIC_KEY_BEGIN"
   cat "$PUBLIC_KEY"
   echo "TRADELEAK_STAGE2_PUBLIC_KEY_END"
@@ -93,7 +95,6 @@ python "$GITHUB_WORKSPACE/tradeleak_stage2/runner.py" 2>&1 | tee "$RESULTS/execu
 RC=${PIPESTATUS[0]}
 set -e
 
-# Redact any credential-like remnants from outputs, then fail if the exact key remains.
 python - "$RESULTS" "$key" <<'PY'
 from pathlib import Path
 import re,sys
@@ -113,12 +114,13 @@ PY
 python - "$RESULTS/summary.json" "$ROOT/result_comment.txt" "$RC" "$ATA_COMMIT" <<'PY'
 import json,sys
 summary_path,out,rc,commit=sys.argv[1:]
-lines=['TRADELEAK_STAGE2_RESULT_V1',f'run_id={__import__("os").environ.get("GITHUB_RUN_ID")}',f'exit_code={rc}',f'ata_commit={commit}']
+lines=['TRADELEAK_NATIVE_RESULT_V1',f'run_id={__import__("os").environ.get("GITHUB_RUN_ID")}',f'exit_code={rc}',f'ata_commit={commit}']
 try:
     s=json.load(open(summary_path,encoding='utf-8'))
-    for k in ['verdict','model','matched_pairs','selected_probes','mean_passive_accuracy','mean_random_accuracy','mean_active_accuracy','active_gain_over_passive','active_gain_over_random','valid_response_rate','median_active_price_impact_pct']:
+    for k in ['verdict','model','matched_pairs','selected_probes','mean_passive_accuracy','mean_random_accuracy','mean_active_accuracy','active_gain_over_passive','active_gain_over_random','valid_response_rate','median_active_price_impact_pct','api_stats']:
         lines.append(f'{k}={json.dumps(s.get(k),ensure_ascii=False) if isinstance(s.get(k),(dict,list)) else s.get(k)}')
     lines.append('pair_metrics='+json.dumps(s.get('pair_metrics'),ensure_ascii=False,separators=(',',':')))
+    lines.append('passive_models='+json.dumps(s.get('passive_models'),ensure_ascii=False,separators=(',',':')))
 except Exception as e:
     lines.append('summary_error='+repr(e))
 open(out,'w',encoding='utf-8').write('\n'.join(lines)+'\n')
