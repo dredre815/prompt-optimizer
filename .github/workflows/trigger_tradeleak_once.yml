@@ -25,3 +25,5 @@ jobs:
           git update-index --chmod=-x .github/workflows/tradeleak_ata_ephemeral.yml
           git commit -m 'chore: activate TradeLeak ATA workflow'
           git push origin HEAD:main
+
+# one-shot trigger revision 1
