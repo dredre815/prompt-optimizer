@@ -1,0 +1,41 @@
+name: TradeLeak Stage2 PR Runner
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'tradeleak_stage2_trigger/**'
+
+permissions:
+  contents: read
+  issues: write
+  actions: read
+
+jobs:
+  pilot:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    env:
+      TRADELEAK_STAGE2_ISSUE_NUMBER: '29'
+      ATA_COMMIT: '6b49ee837ebc1fa0d5bf99d655dc3adc352a77d3'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Run frozen naturalistic-secret pilot
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          chmod +x tradeleak_stage2/bootstrap.sh
+          bash tradeleak_stage2/bootstrap.sh
+      - name: Upload non-secret results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: tradeleak-stage2-results-${{ github.run_id }}
+          path: tradeleak_stage2_output
+          if-no-files-found: warn
+          retention-days: 14
