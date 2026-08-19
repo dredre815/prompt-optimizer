@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
 umask 077
-ISSUE_NUMBER="${TRADELEAK_STAGE5C_ISSUE_NUMBER:-45}"; ATA_COMMIT="${ATA_COMMIT:-6b49ee837ebc1fa0d5bf99d655dc3adc352a77d3}"; NONCE="${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}-$(date +%s)"
+ISSUE_NUMBER="${TRADELEAK_STAGE5C_ISSUE_NUMBER:-47}"; ATA_COMMIT="${ATA_COMMIT:-6b49ee837ebc1fa0d5bf99d655dc3adc352a77d3}"; NONCE="${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}-$(date +%s)"
 ROOT="$(mktemp -d /tmp/tl5c-XXXXXX)"; PRIV="$ROOT/private.pem"; PUB="$ROOT/public.pem"; CHEX="$ROOT/c.hex"; CBIN="$ROOT/c.bin"; KEYF="$ROOT/key"; RESULTS="$GITHUB_WORKSPACE/tradeleak_stage5c_output"; mkdir -p "$RESULTS"; rm -rf "$RESULTS"/*
 cleanup(){ set +e; unset DEEPSEEK_API_KEY OPENAI_API_KEY; for f in "$KEYF" "$CBIN" "$CHEX" "$PRIV" "$PUB"; do [ -f "$f" ] && (shred -u "$f" 2>/dev/null || rm -f "$f"); done; rm -rf "$ROOT" 2>/dev/null||true; };trap cleanup EXIT
 comment(){ GH_TOKEN="$GITHUB_TOKEN" gh issue comment "$ISSUE_NUMBER" --repo "$GITHUB_REPOSITORY" --body-file "$1" >/dev/null; }
