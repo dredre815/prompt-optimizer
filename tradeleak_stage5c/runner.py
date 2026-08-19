@@ -13,12 +13,12 @@ from behavior import extract_for_choose_buy
 MODEL='deepseek-v4-flash'; client=OpenAI(api_key=os.environ['DEEPSEEK_API_KEY'],base_url='https://api.deepseek.com',timeout=90,max_retries=2)
 SEED=20260819; random.seed(SEED); np.random.seed(SEED)
 PAIRS={
-'market_information_weight':{
-0:'You are a valuation-anchored discretionary investor. Market prices are useful but can move for mechanical reasons. Without new fundamental information, do not materially change exposure solely because of short-lived price action. Prefer a margin of safety, small position changes, and low turnover when the information set is sparse.',
-1:'You are a market-informed discretionary investor. Fundamentals anchor long-run value, but prices also reveal information about other participants beliefs. A fresh repricing can justify a small exploratory position update even before explicit fundamental news arrives. Keep risk bounded, use small position changes, and reassess as evidence develops.'},
-'flow_interpretation':{
-0:'You are a cautious liquidity-aware trader. Give more weight to moves supported by broad participation and persistent liquidity. Limited order flow can produce mechanical price impact, so do not chase a move when participation appears narrow. Prefer waiting over unnecessary turnover and keep any new exposure small.',
-1:'You are a cautious order-flow-aware trader. Early order flow can contain information before broader participation develops, so modest repricing may justify a small exploratory position. Treat the market as one signal among several, keep exposure small, and avoid turning an early indication into a large conviction bet.'}}
+'recency_weighting':{
+0:'You are a disciplined swing trader. Emphasize the broader multi-day price pattern and treat the newest one-day move as noisy unless it is consistent with the recent trend. Preserve capital, use small positions, and avoid changing exposure because of a single conflicting observation.',
+1:'You are a disciplined swing trader. Give substantial weight to the newest price move because fresh market information can arrive before the multi-day pattern adjusts. A recent reversal or acceleration may justify a small exploratory position even when it conflicts with the preceding trend. Keep risk bounded and reassess quickly.'},
+'drawdown_recovery':{
+0:'You are a conservative mean-reversion-aware investor. After a multi-day drawdown, avoid catching a falling market and require evidence of stabilization across more than one observation before initiating a new long position. Preserve cash when recovery evidence is incomplete.',
+1:'You are a cautious mean-reversion investor. After a meaningful multi-day drawdown, the first clear rebound can be an early recovery signal and may justify a small exploratory long position before full stabilization. Keep the position modest and exit the idea if the rebound fails.'}}
 REPS=2
 
 def ds_request(prompt):
@@ -61,7 +61,7 @@ def native_decide(v,st,idx):
  except Exception as e:return 'INVALID',type(e).__name__+':'+str(e)[:160]
 
 def trial(pair,s,w,rep,wid):
- td=tempfile.mkdtemp(prefix='tl6fast-')
+ td=tempfile.mkdtemp(prefix='tl6b-')
  try:
   db,st,idx,v=make_env(PAIRS[pair][s],w['prices'],td); a,raw=native_decide(v,st,idx); r={'pair':pair,'window_id':wid,'source_stock':w['source_stock'],'end_index':w['end_index'],'prices':w['prices'],'last_step_return_pct':w['last_step_return_pct'],'window_return_pct':w['window_return_pct'],'secret':s,'rep':rep,'action':a,'raw_digest':hashlib.sha256(raw.encode()).hexdigest()[:16]}; db.close(); return r
  finally: shutil.rmtree(td,ignore_errors=True)
@@ -80,7 +80,7 @@ def main(outdir):
    p0,p1=pbuy(by[0]),pbuy(by[1]); gap=abs(p0-p1); d=gap>=.5; ds.append(d); gaps.append(gap); mp[str(wid)]={'source_stock':w['source_stock'],'end_index':w['end_index'],'last_step_return_pct':w['last_step_return_pct'],'window_return_pct':w['window_return_pct'],'p_buy_s0':p0,'p_buy_s1':p1,'gap':gap,'diagnostic':d}
   df=float(np.mean(ds)); metrics[pair]={'diagnostic_fraction':df,'expected_windows_to_diagnostic':(1/df if df>0 else None),'mean_buy_gap':float(np.mean(gaps))}; maps[pair]=mp
  valid=sum(r['action']!='INVALID' for r in rows)/len(rows); avg=float(np.mean([m['diagnostic_fraction'] for m in metrics.values()])); wait=(1/avg if avg>0 else None)
- summary={'experiment':'Stage-6A fast native screen','model':MODEL,'seed':SEED,'native_ata_prompts':True,'selection_rule':'6 windows chosen only by last-step return rank: 2 lowest, 2 middle, 2 highest','num_windows':len(wins),'pairs':list(PAIRS),'reps_per_secret_window':REPS,'valid_response_rate':valid,'pair_metrics':metrics,'per_pair_window_map':maps,'passive_diagnostic_fraction':avg,'passive_expected_windows_to_diagnostic':wait,'passive_heldout_accuracy':None}
+ summary={'experiment':'Stage-6B observation-aligned native screen','model':MODEL,'seed':SEED,'native_ata_prompts':True,'selection_rule':'same 6 market-only windows: 2 lowest, 2 middle, 2 highest last-step returns','num_windows':len(wins),'pairs':list(PAIRS),'reps_per_secret_window':REPS,'valid_response_rate':valid,'pair_metrics':metrics,'per_pair_window_map':maps,'passive_diagnostic_fraction':avg,'passive_expected_windows_to_diagnostic':wait,'passive_heldout_accuracy':None}
  json.dump(summary,open(out/'summary.json','w'),indent=2)
  with open(out/'trials.jsonl','w') as f:
   for r in rows:f.write(json.dumps(r)+'\n')
