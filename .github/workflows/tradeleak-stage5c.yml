@@ -16,7 +16,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 90
     env:
-      TRADELEAK_STAGE5C_ISSUE_NUMBER: '45'
+      TRADELEAK_STAGE5C_ISSUE_NUMBER: '47'
       ATA_COMMIT: '6b49ee837ebc1fa0d5bf99d655dc3adc352a77d3'
     steps:
       - uses: actions/checkout@v4
