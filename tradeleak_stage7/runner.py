@@ -1,7 +1,21 @@
-import os,sys,json,random,tempfile,shutil,time,hashlib
+import os,sys,json,random,tempfile,shutil,time,hashlib,types
 from pathlib import Path
 import numpy as np
 from openai import OpenAI
+# DecoupledMarket imports optional Zhipu provider symbols at module import time. The current
+# `zai` package API no longer exports ZhipuAiClient. Stage-7 never calls that provider, so
+# install an import-only compatibility symbol before loading the frozen framework.
+try:
+ import zai as _zai
+ if not hasattr(_zai,'ZhipuAiClient'):
+  class _UnusedZhipuAiClient:
+   def __init__(self,*a,**k): raise RuntimeError('Zhipu provider is out of scope for TradeLeak Stage-7')
+  _zai.ZhipuAiClient=_UnusedZhipuAiClient
+except Exception:
+ m=types.ModuleType('zai')
+ class _UnusedZhipuAiClient:
+  def __init__(self,*a,**k): raise RuntimeError('Zhipu provider is out of scope for TradeLeak Stage-7')
+ m.ZhipuAiClient=_UnusedZhipuAiClient;sys.modules['zai']=m
 ATA_ROOT=Path(os.environ['ATA_ROOT']); DM_ROOT=ATA_ROOT/'decoupledmarket'; DM_SRC=DM_ROOT/'src'; DM_PKG=DM_SRC/'decoupledmarket'; sys.path.insert(0,str(DM_SRC)); sys.path.insert(0,str(DM_PKG)); os.chdir(DM_ROOT)
 from decoupledmarket.database_utils import Database_operate
 from decoupledmarket.Stock import Stock
