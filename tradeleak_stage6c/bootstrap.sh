@@ -5,26 +5,24 @@ ISSUE_NUMBER="${TRADELEAK_STAGE6C_ISSUE_NUMBER:-60}"; ATA_COMMIT="${ATA_COMMIT:-
 ROOT="$(mktemp -d /tmp/tl6c-XXXXXX)"; PRIV="$ROOT/private.pem"; PUB="$ROOT/public.pem"; CHEX="$ROOT/c.hex"; CBIN="$ROOT/c.bin"; KEYF="$ROOT/key"; RESULTS="$GITHUB_WORKSPACE/tradeleak_stage6c_output"; mkdir -p "$RESULTS"; rm -rf "$RESULTS"/*
 cleanup(){ set +e; unset DEEPSEEK_API_KEY OPENAI_API_KEY; for f in "$KEYF" "$CBIN" "$CHEX" "$PRIV" "$PUB"; do [ -f "$f" ] && (shred -u "$f" 2>/dev/null || rm -f "$f"); done; rm -rf "$ROOT" 2>/dev/null||true; };trap cleanup EXIT
 comment(){ GH_TOKEN="$GITHUB_TOKEN" gh issue comment "$ISSUE_NUMBER" --repo "$GITHUB_REPOSITORY" --body-file "$1" >/dev/null; }
-openssl genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:4096 -out "$PRIV" 2>/dev/null;openssl pkey -in "$PRIV" -pubout -out "$PUB";{ echo TRADELEAK_STAGE6C_PUBLIC_KEY_V1;echo "nonce=$NONCE";echo "run_id=$GITHUB_RUN_ID";echo requested_model=deepseek-v4-flash;echo "ata_commit=$ATA_COMMIT";echo TRADELEAK_STAGE6C_PUBLIC_KEY_BEGIN;cat "$PUB";echo TRADELEAK_STAGE6C_PUBLIC_KEY_END;} > "$ROOT/pub";comment "$ROOT/pub"
-found=0;for _ in $(seq 1 360);do GH_TOKEN="$GITHUB_TOKEN" gh api "repos/${GITHUB_REPOSITORY}/issues/${ISSUE_NUMBER}/comments?per_page=100" --paginate > "$ROOT/comments.json";if python - "$ROOT/comments.json" "$NONCE" "$CHEX" "$ROOT/cid" <<'PY'
+openssl genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:4096 -out "$PRIV" 2>/dev/null;openssl pkey -in "$PRIV" -pubout -out "$PUB";{ echo TRADELEAK_STAGE6C_PUBLIC_KEY_V2;echo "nonce=$NONCE";echo "run_id=$GITHUB_RUN_ID";echo requested_model=deepseek-v4-flash;echo "ata_commit=$ATA_COMMIT";echo TRADELEAK_STAGE6C_PUBLIC_KEY_BEGIN;cat "$PUB";echo TRADELEAK_STAGE6C_PUBLIC_KEY_END;} > "$ROOT/pub";comment "$ROOT/pub"
+found=0;for _ in $(seq 1 360);do GH_TOKEN="$GITHUB_TOKEN" gh api "repos/${GITHUB_REPOSITORY}/issues/${ISSUE_NUMBER}/comments?per_page=100" --paginate > "$ROOT/comments.json";if python - "$ROOT/comments.json" "$NONCE" "$CHEX" "$ROOT/cids" <<'PY'
 import json,re,sys
-src,nonce,out,cid=sys.argv[1:];xs=json.load(open(src));head=re.compile(r'TRADELEAK_STAGE6C_CIPHERTEXT_CHUNKS_V1\s*\nnonce='+re.escape(nonce)+r'\s*\n')
-for x in reversed(xs):
- b=x.get('body') or ''
- if not head.search(b):continue
- parts=[];ok=True
- for i in range(8):
-  m=re.search(r'^chunk%d=([0-9a-fA-F]{128})$'%i,b,re.M)
-  if not m:ok=False;break
-  parts.append(m.group(1))
- if not ok:continue
- h=''.join(parts)
- if len(h)!=1024:continue
- open(out,'w').write(h+'\n');open(cid,'w').write(str(x['id']));raise SystemExit(0)
-raise SystemExit(1)
+src,nonce,out,cids=sys.argv[1:];xs=json.load(open(src));parts=[];ids=[]
+for i in range(8):
+ p=re.compile(r'^TRADELEAK_STAGE6C_CHUNK_V2\s*\nnonce='+re.escape(nonce)+r'\s*\nindex='+str(i)+r'\s*\ndata=([0-9a-fA-F]{128})\s*$',re.M)
+ hit=None
+ for x in reversed(xs):
+  m=p.search(x.get('body') or '')
+  if m:hit=(m.group(1),x['id']);break
+ if hit is None:raise SystemExit(1)
+ parts.append(hit[0]);ids.append(str(hit[1]))
+h=''.join(parts)
+if len(h)!=1024:raise SystemExit(1)
+open(out,'w').write(h+'\n');open(cids,'w').write('\n'.join(ids)+'\n')
 PY
 then found=1;break;fi;sleep 5;done;[ "$found" -eq 1 ]||exit 2;[ "$(tr -d '\n\r ' < "$CHEX" | wc -c)" -eq 1024 ]||exit 4;xxd -r -p "$CHEX">"$CBIN";[ "$(wc -c < "$CBIN")" -eq 512 ]||exit 5;openssl pkeyutl -decrypt -inkey "$PRIV" -in "$CBIN" -out "$KEYF" -pkeyopt rsa_padding_mode:oaep -pkeyopt rsa_oaep_md:sha256 -pkeyopt rsa_mgf1_md:sha256
-key="$(cat "$KEYF")";[[ "$key" == sk-* ]]||exit 3;echo "::add-mask::$key";export DEEPSEEK_API_KEY="$key";export OPENAI_API_KEY="$key";shred -u "$KEYF" 2>/dev/null||rm -f "$KEYF";[ -s "$ROOT/cid" ]&&GH_TOKEN="$GITHUB_TOKEN" gh api -X DELETE "repos/${GITHUB_REPOSITORY}/issues/comments/$(cat "$ROOT/cid")">/dev/null 2>&1||true
+key="$(cat "$KEYF")";[[ "$key" == sk-* ]]||exit 3;echo "::add-mask::$key";export DEEPSEEK_API_KEY="$key";export OPENAI_API_KEY="$key";shred -u "$KEYF" 2>/dev/null||rm -f "$KEYF";while read -r cid;do [ -n "$cid" ]&&GH_TOKEN="$GITHUB_TOKEN" gh api -X DELETE "repos/${GITHUB_REPOSITORY}/issues/comments/$cid">/dev/null 2>&1||true;done<"$ROOT/cids"
 python -m pip install --quiet --upgrade pip wheel setuptools;python -m pip install --quiet 'openai>=2,<3' numpy pandas matplotlib mplfinance timeout-decorator eventlet
 git clone --quiet https://github.com/MTMQuantAI/Agent-Trading-Arena.git "$ROOT/ata";git -C "$ROOT/ata" checkout --quiet "$ATA_COMMIT";export ATA_ROOT="$ROOT/ata";export TRADELEAK_STAGE6C_OUT="$RESULTS";python "$GITHUB_WORKSPACE/tradeleak_stage6c/runner.py"|tee "$RESULTS/execution.log";echo "$ATA_COMMIT">"$RESULTS/ata_commit.txt"
 python - "$RESULTS" "$key" <<'PY'
