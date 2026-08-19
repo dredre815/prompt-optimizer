@@ -1,0 +1,2 @@
+Trigger frozen Stage-7a isolated memory-leakage experiment with execution-only retry/format fix.
+Scientific design remains as preregistered in issue #57; see execution addendum before run.
