@@ -22,6 +22,7 @@ jobs:
         shell: bash
         env: {GITHUB_TOKEN: '${{ secrets.GITHUB_TOKEN }}'}
         run: |
+          python tradeleak_stage7a/apply_v2_execution_patch.py
           chmod +x tradeleak_stage7a/bootstrap.sh
           bash tradeleak_stage7a/bootstrap.sh
       - name: Upload non-secret results
