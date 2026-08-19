@@ -1,6 +1,5 @@
 import os,sys,json,random,tempfile,shutil,time,hashlib
 from pathlib import Path
-from collections import defaultdict
 import numpy as np
 from openai import OpenAI
 ATA_ROOT=Path(os.environ['ATA_ROOT']); SM=ATA_ROOT/'Agent-Trading-Arena'/'Stock_Main'; sys.path.insert(0,str(SM)); os.chdir(SM)
@@ -14,9 +13,6 @@ from behavior import extract_for_choose_buy
 MODEL='deepseek-v4-flash'; client=OpenAI(api_key=os.environ['DEEPSEEK_API_KEY'],base_url='https://api.deepseek.com',timeout=90,max_retries=2)
 SEED=20260819; random.seed(SEED); np.random.seed(SEED)
 PAIRS={
-'confirmation_style':{
-0:'You are a risk-controlled swing trader. Preserve capital, keep positions modest, and prefer evidence that a move is durable. Use price, recent volume, and portfolio context together. Avoid overreacting to isolated observations; when evidence is incomplete, wait for confirmation rather than chase. Hold cash readily and avoid unnecessary turnover.',
-1:'You are a risk-controlled swing trader. Preserve capital and keep positions modest, but try to participate early when market behavior suggests new information is being incorporated. Use price, recent volume, and portfolio context together. A small exploratory position is acceptable before every signal is confirmed, followed by reassessment. Avoid oversized bets and unnecessary turnover.'},
 'market_information_weight':{
 0:'You are a valuation-anchored discretionary investor. Market prices are useful but can move for mechanical reasons. Without new fundamental information, do not materially change exposure solely because of short-lived price action. Prefer a margin of safety, small position changes, and low turnover when the information set is sparse.',
 1:'You are a market-informed discretionary investor. Fundamentals anchor long-run value, but prices also reveal information about other participants beliefs. A fresh repricing can justify a small exploratory position update even before explicit fundamental news arrives. Keep risk bounded, use small position changes, and reassess as evidence develops.'},
@@ -35,14 +31,16 @@ def ds_request(prompt):
  return last
 gs.ChatGPT_request=ds_request; gs.GPT4_request=ds_request; gs.temp_sleep=lambda seconds=1:None
 
-def published_windows():
+def all_windows():
  src=json.load(open(SM/'save'/'sim01'/'stocks.json')); out=[]
  for s in src:
   ps=[float(x) for x in s['past_stock_last_prices']]
   for i in range(4,len(ps)):
-   w=ps[i-4:i+1]
-   out.append({'source_stock':s['stock_name'],'end_index':i,'prices':w,'last_step_return_pct':(w[-1]/w[-2]-1)*100,'window_return_pct':(w[-1]/w[0]-1)*100})
+   w=ps[i-4:i+1]; out.append({'source_stock':s['stock_name'],'end_index':i,'prices':w,'last_step_return_pct':(w[-1]/w[-2]-1)*100,'window_return_pct':(w[-1]/w[0]-1)*100})
  return out
+
+def selected_windows():
+ ws=sorted(all_windows(),key=lambda w:w['last_step_return_pct']); idx=[0,1,len(ws)//2-1,len(ws)//2,-2,-1]; return [ws[i] for i in idx]
 
 def make_env(principle,prices,root):
  root=Path(root); pp=root/'persona.json'; sp=root/'stocks.json'
@@ -63,33 +61,26 @@ def native_decide(v,st,idx):
  except Exception as e:return 'INVALID',type(e).__name__+':'+str(e)[:160]
 
 def trial(pair,s,w,rep,wid):
- td=tempfile.mkdtemp(prefix='tl6a-')
+ td=tempfile.mkdtemp(prefix='tl6fast-')
  try:
-  db,st,idx,v=make_env(PAIRS[pair][s],w['prices'],td); a,raw=native_decide(v,st,idx)
-  r={'pair':pair,'window_id':wid,'source_stock':w['source_stock'],'end_index':w['end_index'],'prices':w['prices'],'last_step_return_pct':w['last_step_return_pct'],'window_return_pct':w['window_return_pct'],'secret':s,'rep':rep,'action':a,'raw_digest':hashlib.sha256(raw.encode()).hexdigest()[:16]}; db.close(); return r
+  db,st,idx,v=make_env(PAIRS[pair][s],w['prices'],td); a,raw=native_decide(v,st,idx); r={'pair':pair,'window_id':wid,'source_stock':w['source_stock'],'end_index':w['end_index'],'prices':w['prices'],'last_step_return_pct':w['last_step_return_pct'],'window_return_pct':w['window_return_pct'],'secret':s,'rep':rep,'action':a,'raw_digest':hashlib.sha256(raw.encode()).hexdigest()[:16]}; db.close(); return r
  finally: shutil.rmtree(td,ignore_errors=True)
 
 def pbuy(rr):
  v=[x for x in rr if x['action'] in ('BUY','HOLD')]; return .5 if not v else sum(x['action']=='BUY' for x in v)/len(v)
 
-def frac(xs): return None if not xs else float(np.mean(xs))
-
 def main(outdir):
- out=Path(outdir); out.mkdir(parents=True,exist_ok=True); wins=published_windows(); rows=[]; pair_metrics={}; maps={}
+ out=Path(outdir); out.mkdir(parents=True,exist_ok=True); wins=selected_windows(); rows=[]; metrics={}; maps={}
  for pair in PAIRS:
-  diag=[]; gaps=[]; up=[]; down=[]; poswin=[]; negwin=[]; mp={}
+  ds=[]; gaps=[]; mp={}
   for wid,w in enumerate(wins):
    by={}
    for s in (0,1):
     rr=[trial(pair,s,w,i,wid) for i in range(REPS)]; rows+=rr; by[s]=rr
-   p0,p1=pbuy(by[0]),pbuy(by[1]); gap=abs(p0-p1); d=gap>=.5; diag.append(d); gaps.append(gap)
-   (up if w['last_step_return_pct']>0 else down).append(d)
-   (poswin if w['window_return_pct']>0 else negwin).append(d)
-   mp[str(wid)]={'source_stock':w['source_stock'],'end_index':w['end_index'],'last_step_return_pct':w['last_step_return_pct'],'window_return_pct':w['window_return_pct'],'p_buy_s0':p0,'p_buy_s1':p1,'gap':gap,'diagnostic':d}
-  df=float(np.mean(diag)); pair_metrics[pair]={'diagnostic_fraction':df,'expected_windows_to_diagnostic':(1/df if df>0 else None),'mean_buy_gap':float(np.mean(gaps)),'up_last_step_diagnostic_fraction':frac(up),'down_last_step_diagnostic_fraction':frac(down),'positive_window_diagnostic_fraction':frac(poswin),'negative_window_diagnostic_fraction':frac(negwin)}; maps[pair]=mp
- valid=sum(r['action']!='INVALID' for r in rows)/len(rows)
- primary=pair_metrics['confirmation_style']
- summary={'experiment':'Stage-6A multi-policy passive identifiability map','model':MODEL,'seed':SEED,'native_ata_prompts':True,'passive_source':'all 18 rolling 5-day windows from pinned ATA save/sim01/stocks.json','num_windows':len(wins),'pairs':list(PAIRS),'reps_per_secret_window':REPS,'valid_response_rate':valid,'pair_metrics':pair_metrics,'per_pair_window_map':maps,'passive_diagnostic_fraction':primary['diagnostic_fraction'],'passive_expected_windows_to_diagnostic':primary['expected_windows_to_diagnostic'],'passive_heldout_accuracy':None}
+   p0,p1=pbuy(by[0]),pbuy(by[1]); gap=abs(p0-p1); d=gap>=.5; ds.append(d); gaps.append(gap); mp[str(wid)]={'source_stock':w['source_stock'],'end_index':w['end_index'],'last_step_return_pct':w['last_step_return_pct'],'window_return_pct':w['window_return_pct'],'p_buy_s0':p0,'p_buy_s1':p1,'gap':gap,'diagnostic':d}
+  df=float(np.mean(ds)); metrics[pair]={'diagnostic_fraction':df,'expected_windows_to_diagnostic':(1/df if df>0 else None),'mean_buy_gap':float(np.mean(gaps))}; maps[pair]=mp
+ valid=sum(r['action']!='INVALID' for r in rows)/len(rows); avg=float(np.mean([m['diagnostic_fraction'] for m in metrics.values()])); wait=(1/avg if avg>0 else None)
+ summary={'experiment':'Stage-6A fast native screen','model':MODEL,'seed':SEED,'native_ata_prompts':True,'selection_rule':'6 windows chosen only by last-step return rank: 2 lowest, 2 middle, 2 highest','num_windows':len(wins),'pairs':list(PAIRS),'reps_per_secret_window':REPS,'valid_response_rate':valid,'pair_metrics':metrics,'per_pair_window_map':maps,'passive_diagnostic_fraction':avg,'passive_expected_windows_to_diagnostic':wait,'passive_heldout_accuracy':None}
  json.dump(summary,open(out/'summary.json','w'),indent=2)
  with open(out/'trials.jsonl','w') as f:
   for r in rows:f.write(json.dumps(r)+'\n')
