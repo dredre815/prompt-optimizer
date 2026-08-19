@@ -1,0 +1,1 @@
+Trigger the preregistered Stage-7a output-format compatibility audit. Diagnostic only; not part of the scientific sample.
