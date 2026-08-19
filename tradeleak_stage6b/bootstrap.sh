@@ -5,10 +5,10 @@ ISSUE_NUMBER="${TRADELEAK_STAGE6B_ISSUE_NUMBER:-53}"; ATA_COMMIT="${ATA_COMMIT:-
 ROOT="$(mktemp -d /tmp/tl6b-XXXXXX)"; PRIV="$ROOT/private.pem"; PUB="$ROOT/public.pem"; CHEX="$ROOT/c.hex"; CBIN="$ROOT/c.bin"; KEYF="$ROOT/key"; RESULTS="$GITHUB_WORKSPACE/tradeleak_stage6b_output"; mkdir -p "$RESULTS"; rm -rf "$RESULTS"/*
 cleanup(){ set +e; unset DEEPSEEK_API_KEY OPENAI_API_KEY; for f in "$KEYF" "$CBIN" "$CHEX" "$PRIV" "$PUB"; do [ -f "$f" ] && (shred -u "$f" 2>/dev/null || rm -f "$f"); done; rm -rf "$ROOT" 2>/dev/null||true; };trap cleanup EXIT
 comment(){ GH_TOKEN="$GITHUB_TOKEN" gh issue comment "$ISSUE_NUMBER" --repo "$GITHUB_REPOSITORY" --body-file "$1" >/dev/null; }
-openssl genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:4096 -out "$PRIV" 2>/dev/null;openssl pkey -in "$PRIV" -pubout -out "$PUB";{ echo TRADELEAK_STAGE6B_PUBLIC_KEY_V2;echo "nonce=$NONCE";echo "run_id=$GITHUB_RUN_ID";echo requested_model=deepseek-v4-flash;echo "ata_commit=$ATA_COMMIT";echo TRADELEAK_STAGE6B_PUBLIC_KEY_BEGIN;cat "$PUB";echo TRADELEAK_STAGE6B_PUBLIC_KEY_END;} > "$ROOT/pub";comment "$ROOT/pub"
+openssl genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:4096 -out "$PRIV" 2>/dev/null;openssl pkey -in "$PRIV" -pubout -out "$PUB";{ echo TRADELEAK_STAGE6B_PUBLIC_KEY_V3;echo "nonce=$NONCE";echo "run_id=$GITHUB_RUN_ID";echo requested_model=deepseek-v4-flash;echo "ata_commit=$ATA_COMMIT";echo TRADELEAK_STAGE6B_PUBLIC_KEY_BEGIN;cat "$PUB";echo TRADELEAK_STAGE6B_PUBLIC_KEY_END;} > "$ROOT/pub";comment "$ROOT/pub"
 found=0;for _ in $(seq 1 360);do GH_TOKEN="$GITHUB_TOKEN" gh api "repos/${GITHUB_REPOSITORY}/issues/${ISSUE_NUMBER}/comments?per_page=100" --paginate > "$ROOT/comments.json";if python - "$ROOT/comments.json" "$NONCE" "$CHEX" "$ROOT/cid" <<'PY'
 import json,re,sys
-src,nonce,out,cid=sys.argv[1:];xs=json.load(open(src));head=re.compile(r'TRADELEAK_STAGE6B_CIPHERTEXT_CHUNKS_V2\s*\nnonce='+re.escape(nonce)+r'\s*\n')
+src,nonce,out,cid=sys.argv[1:];xs=json.load(open(src));head=re.compile(r'TRADELEAK_STAGE6B_CIPHERTEXT_CHUNKS_V3\s*\nnonce='+re.escape(nonce)+r'\s*\n')
 for x in reversed(xs):
  b=x.get('body') or ''
  if not head.search(b):continue
@@ -38,6 +38,6 @@ for f in r.rglob('*'):
 PY
 python - "$RESULTS/summary.json" "$ROOT/res" <<'PY'
 import json,sys,os
-s=json.load(open(sys.argv[1]));open(sys.argv[2],'w').write('\n'.join(['TRADELEAK_STAGE6B_RESULT_V1',f"run_id={os.environ.get('GITHUB_RUN_ID')}",f"model={s['model']}",f"valid_response_rate={s['valid_response_rate']}",f"tradeleak_group={json.dumps(s['tradeleak_group'],separators=(',',':'))}",f"blind_group={json.dumps(s['blind_group'],separators=(',',':'))}",f"oracle_group={json.dumps(s['oracle_group'],separators=(',',':'))}"])+'\n')
+s=json.load(open(sys.argv[1]));open(sys.argv[2],'w').write('\n'.join(['TRADELEAK_STAGE6B_RESULT_V3',f"run_id={os.environ.get('GITHUB_RUN_ID')}",f"model={s['model']}",f"valid_response_rate={s['valid_response_rate']}",f"final_close_mismatch_pct={s['final_close_mismatch_pct']}",f"range_gain_pct={s['range_gain_pct']}",f"activation_gain={s['activation_gain']}",f"activation_supported={s['activation_supported']}",f"condition_metrics={json.dumps(s['condition_metrics'],separators=(',',':'))}"])+'\n')
 PY
 comment "$ROOT/res";unset DEEPSEEK_API_KEY OPENAI_API_KEY
