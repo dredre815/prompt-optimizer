@@ -1,0 +1,1 @@
+Trigger the frozen Stage-7a rerun under execution addendum V2: same scientific design, max completion budget 4096, empty-content telemetry enabled.
