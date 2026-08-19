@@ -1,1 +1,1 @@
-run=2026-08-19-stage6a-fast-screen
+run=2026-08-19-stage6b-observation-aligned
