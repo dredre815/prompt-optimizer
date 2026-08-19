@@ -1,4 +1,4 @@
-name: TradeLeak Stage6b Roundtrip Economics
+name: TradeLeak Stage6B Intraday Path Activation
 
 on:
   pull_request:
@@ -23,7 +23,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-      - name: Run frozen round-trip economics experiment
+      - name: Run frozen intraday-path activation validation
         shell: bash
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
