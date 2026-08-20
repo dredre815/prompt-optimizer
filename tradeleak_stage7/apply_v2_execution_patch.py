@@ -10,7 +10,7 @@ replacements = [
     ),
     (
         "MODEL='deepseek-v4-flash';client=OpenAI(api_key=os.environ['DEEPSEEK_API_KEY'],base_url='https://api.deepseek.com',timeout=90,max_retries=2)\nSEED=20260819; random.seed(SEED); np.random.seed(SEED); REPS=3\n",
-        "MODEL='deepseek-v4-flash';NATIVE_REPEAT_CAP=3;PROVIDER_ATTEMPTS=2;REQUEST_TIMEOUT_SEC=60;MAX_COMPLETION_TOKENS=4096\nclient=OpenAI(api_key=os.environ['DEEPSEEK_API_KEY'],base_url='https://api.deepseek.com',timeout=REQUEST_TIMEOUT_SEC,max_retries=0)\nAPI_STATS={'provider_calls':0,'provider_errors':0,'provider_success_empty':0,'provider_success_nonempty':0,'finish_reasons':{},'llm_requested_repeats':[],'chatgpt_requested_repeats':[]}\nSEED=20260819; random.seed(SEED); np.random.seed(SEED); REPS=3\n",
+        "MODEL='deepseek-v4-flash';NATIVE_REPEAT_CAP=3;PROVIDER_ATTEMPTS=2;REQUEST_TIMEOUT_SEC=60;MAX_COMPLETION_TOKENS=4096\nclient=OpenAI(api_key=os.environ['DEEPSEEK_API_KEY'],base_url='https://api.deepseek.com',timeout=REQUEST_TIMEOUT_SEC,max_retries=0)\nAPI_STATS={'provider_calls':0,'provider_errors':0,'provider_success_empty':0,'provider_success_nonempty':0,'finish_reasons':{},'llm_requested_repeats':[],'chatgpt_requested_repeats':[]}\nSEED=20260819; random.seed(SEED); np.random.seed(SEED); REPS=1\n",
     ),
     (
         "def ds_request(agent_model,prompt):\n last=''\n for k in range(3):\n  try:\n   r=client.chat.completions.create(model=MODEL,messages=[{'role':'user','content':prompt}],temperature=.15,max_tokens=1024); last=r.choices[0].message.content or ''\n   if last.strip(): return last\n  except Exception: time.sleep(1.2*(k+1))\n return last\ngs._request_by_model=ds_request; gs.temp_sleep=lambda seconds=1:None\n",
@@ -18,15 +18,15 @@ replacements = [
     ),
     (
         "'gate':'ON recovery AUC>=0.75 AND OFF<=0.65 AND delta>=0.15 AND valid>=0.90','verdict':'GO' if go else 'NO-GO'}",
-        "'scientific_design_changed':False,'execution_addendum':{'native_repeat_cap':NATIVE_REPEAT_CAP,'provider_attempts':PROVIDER_ATTEMPTS,'request_timeout_sec':REQUEST_TIMEOUT_SEC,'max_completion_tokens':MAX_COMPLETION_TOKENS,'semantic_parser_adapter':False,'chatgpt_and_llm_generators_capped':True},'api_stats':API_STATS,'gate':'ON recovery AUC>=0.75 AND OFF<=0.65 AND delta>=0.15 AND valid>=0.90','verdict':'GO' if go else 'NO-GO'}",
+        "'scientific_design_changed':True,'exploratory_fast_screen':True,'primary_gate_applicable':False,'execution_addendum':{'native_repeat_cap':NATIVE_REPEAT_CAP,'provider_attempts':PROVIDER_ATTEMPTS,'request_timeout_sec':REQUEST_TIMEOUT_SEC,'max_completion_tokens':MAX_COMPLETION_TOKENS,'semantic_parser_adapter':False,'chatgpt_and_llm_generators_capped':True},'api_stats':API_STATS,'gate':'DESCRIPTIVE ONLY; primary Stage-7 gate not applicable to REPS=1 fast screen','verdict':'EXPLORATORY'}",
     ),
 ]
 
 for old, new in replacements:
     count = s.count(old)
     if count != 1:
-        raise RuntimeError(f"Stage-7 V3 patch expected exactly one match, got {count}: {old[:120]!r}")
+        raise RuntimeError(f"Stage-7 fast-screen patch expected exactly one match, got {count}: {old[:120]!r}")
     s = s.replace(old, new, 1)
 
 p.write_text(s, encoding="utf-8")
-print("Applied frozen Stage-7 V3 execution patch: ChatGPT+LLM retry caps + max_tokens=4096 + telemetry")
+print("Applied preregistered Stage-7 exploratory fast-screen patch: REPS=1 + correct native caps")
