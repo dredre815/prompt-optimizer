@@ -12,13 +12,15 @@ CT_B64="$TMP/ciphertext.b64"
 CT_BIN="$TMP/ciphertext.bin"
 KEY_FILE="$TMP/gemini.key"
 CID_FILE="$TMP/comment_id"
+RUNNER="$TMP/run_dual_pilot.py"
 OUT="$GITHUB_WORKSPACE/pathfinder_probe_pilot/output"
+rm -rf "$OUT"
 mkdir -p "$OUT"
 
 cleanup(){
   set +e
   unset GEMINI_API_KEY
-  for f in "$KEY_FILE" "$CT_BIN" "$CT_B64" "$PRIV" "$PUB"; do
+  for f in "$KEY_FILE" "$CT_BIN" "$CT_B64" "$PRIV" "$PUB" "$RUNNER"; do
     [ -f "$f" ] && (shred -u "$f" 2>/dev/null || rm -f "$f")
   done
   rm -rf "$TMP"
@@ -82,6 +84,7 @@ if [ -s "$CID_FILE" ]; then
   GH_TOKEN="$GITHUB_TOKEN" gh api -X DELETE "repos/${GITHUB_REPOSITORY}/issues/comments/$(cat "$CID_FILE")" >/dev/null 2>&1 || true
 fi
 
+# Confirm the credential and requested model are usable before the long pilot.
 python - <<'PY'
 import os
 from google import genai
@@ -105,9 +108,17 @@ assert r.output_text and 'true' in r.output_text.lower(), r.output_text
 print('Gemini 3.7 Flash preflight: OK')
 PY
 
+# Reconstruct the audited dual-dataset runner. The source hash is frozen here.
+base64 --decode "$GITHUB_WORKSPACE/pathfinder_probe_pilot/run_dual_pilot.py.gz.b64" | gzip -dc > "$RUNNER"
+echo '59ed79a87014fc89304b0df6aee3e30988950b7f0133bea322023f07f95e0c2d  '"$RUNNER" | sha256sum --check --strict
+python -m py_compile "$RUNNER"
+
 set +e
-python "$GITHUB_WORKSPACE/pathfinder_probe_pilot/run_pilot.py" \
-  --pool-size 200 --targets 20 --out-dir "$OUT" 2>&1 | tee "$OUT/execution.log"
+python "$RUNNER" \
+  --rwku-pool 200 \
+  --tofu-pool 200 \
+  --targets 20 \
+  --out-dir "$OUT" 2>&1 | tee "$OUT/execution.log"
 RC=${PIPESTATUS[0]}
 set -e
 
@@ -136,7 +147,7 @@ unset GEMINI_API_KEY
 KEY=''
 
 {
-  echo PATHFINDER_GEMINI_RESULT_V1
+  echo PATHFINDER_GEMINI_RESULT_V2
   echo "nonce=$NONCE"
   echo "run_id=${GITHUB_RUN_ID:-unknown}"
   echo "exit_code=$RC"
