@@ -84,33 +84,10 @@ if [ -s "$CID_FILE" ]; then
   GH_TOKEN="$GITHUB_TOKEN" gh api -X DELETE "repos/${GITHUB_REPOSITORY}/issues/comments/$(cat "$CID_FILE")" >/dev/null 2>&1 || true
 fi
 
-# Confirm the credential and requested model are usable before the long pilot.
-python - <<'PY'
-import os
-from google import genai
-client=genai.Client(api_key=os.environ['GEMINI_API_KEY'])
-r=client.interactions.create(
-    model='gemini-3.7-flash',
-    input='Return exactly the JSON object {"ok": true}.',
-    generation_config={'thinking_level':'low'},
-    response_format={
-        'type':'text',
-        'mime_type':'application/json',
-        'schema':{
-            'type':'object',
-            'properties':{'ok':{'type':'boolean'}},
-            'required':['ok'],
-            'additionalProperties':False,
-        },
-    },
-)
-assert r.output_text and 'true' in r.output_text.lower(), r.output_text
-print('Gemini 3.7 Flash preflight: OK')
-PY
-
-# Reconstruct the audited dual-dataset runner. The source hash is frozen here.
+# Reconstruct the frozen v4 dual-dataset runner. The single global template-bank
+# generation inside the runner is also the Gemini credential/model validation.
 base64 --decode "$GITHUB_WORKSPACE/pathfinder_probe_pilot/run_dual_pilot.py.gz.b64" | gzip -dc > "$RUNNER"
-echo '59ed79a87014fc89304b0df6aee3e30988950b7f0133bea322023f07f95e0c2d  '"$RUNNER" | sha256sum --check --strict
+echo '5bbfa4830da6ba60414b440dc73eb103f1c1b720faea4692b1c2628ccf5106e8  '"$RUNNER" | sha256sum --check --strict
 python -m py_compile "$RUNNER"
 
 set +e
@@ -147,7 +124,7 @@ unset GEMINI_API_KEY
 KEY=''
 
 {
-  echo PATHFINDER_GEMINI_RESULT_V2
+  echo PATHFINDER_GEMINI_RESULT_V4
   echo "nonce=$NONCE"
   echo "run_id=${GITHUB_RUN_ID:-unknown}"
   echo "exit_code=$RC"
