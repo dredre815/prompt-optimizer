@@ -1,4 +1,4 @@
-name: PATHFINDER strict matched-probe dual pilot
+name: PATHFINDER strict matched-probe dual pilot v4
 
 on:
   push:
@@ -30,16 +30,16 @@ jobs:
         shell: bash
         run: |
           python -m pip install --upgrade pip
-          python -m pip install 'google-genai>=2.0,<3' 'pydantic>=2.8,<3' 'requests>=2.32,<3'
+          python -m pip install 'google-genai>=2.0,<3' 'requests>=2.32,<3'
 
-      - name: Validate pilot payload and secure runner
+      - name: Validate v4 pilot payload and secure runner
         shell: bash
         run: |
           bash -n pathfinder_probe_pilot/gemini_credential.sh
-          test "$(sha256sum pathfinder_probe_pilot/run_dual_pilot.py.gz.b64 | awk '{print $1}')" = '3a32fd640179a99894a8e1d338956109d2fa4f5708e61469e10d324e55fbdfe3'
+          test "$(sha256sum pathfinder_probe_pilot/run_dual_pilot.py.gz.b64 | awk '{print $1}')" = '1ae8557295696d7a542269d14739a7f1e4f2ca7b009eac9eca0b330c14e14d41'
           sha256sum pathfinder_probe_pilot/gemini_credential.sh
 
-      - name: Run secure Gemini-backed TOFU20 + RWKU20 pilot
+      - name: Run secure Gemini-backed TOFU20 + RWKU20 v4 pilot
         shell: bash
         run: bash pathfinder_probe_pilot/gemini_credential.sh
         env:
@@ -49,7 +49,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: pathfinder-strict-matched-probe-dual-pilot-${{ github.run_id }}
+          name: pathfinder-strict-matched-probe-dual-v4-${{ github.run_id }}
           path: pathfinder_probe_pilot/output
           if-no-files-found: warn
           retention-days: 14
