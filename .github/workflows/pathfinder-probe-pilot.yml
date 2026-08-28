@@ -1,4 +1,4 @@
-name: PATHFINDER strict matched-probe dual pilot v5
+name: PATHFINDER TOFU20 strict matched-probe pilot v6
 
 on:
   push:
@@ -30,16 +30,19 @@ jobs:
         shell: bash
         run: |
           python -m pip install --upgrade pip
-          python -m pip install 'google-genai>=2.0,<3' 'requests>=2.32,<3'
+          python -m pip install 'google-genai>=2.0,<3' 'pydantic>=2.8,<3' 'requests>=2.32,<3'
 
-      - name: Validate v5 pilot payload and secure runner
+      - name: Validate v6 payload and secure runner
         shell: bash
         run: |
           bash -n pathfinder_probe_pilot/gemini_credential.sh
-          test "$(sha256sum pathfinder_probe_pilot/run_dual_pilot.py.gz.b64 | awk '{print $1}')" = '1ae8557295696d7a542269d14739a7f1e4f2ca7b009eac9eca0b330c14e14d41'
+          tr -d '[:space:]' < pathfinder_probe_pilot/run_tofu_v6.py.gz.b64 | base64 --decode | gzip -dc > /tmp/run_tofu_v6.py
+          echo 'b0b7352ff08efe80165d67979e931c4911a8b3cc20bb2ae10bbd067ef45af9b8  /tmp/run_tofu_v6.py' | sha256sum --check --strict
+          python -m py_compile /tmp/run_tofu_v6.py
+          rm -f /tmp/run_tofu_v6.py
           sha256sum pathfinder_probe_pilot/gemini_credential.sh
 
-      - name: Run secure Gemini-backed TOFU20 + RWKU20 v5 pilot
+      - name: Run secure Gemini-backed TOFU20 v6 pilot
         shell: bash
         run: bash pathfinder_probe_pilot/gemini_credential.sh
         env:
@@ -49,7 +52,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: pathfinder-strict-matched-probe-dual-v5-${{ github.run_id }}
+          name: pathfinder-tofu20-v6-${{ github.run_id }}
           path: pathfinder_probe_pilot/output
           if-no-files-found: warn
           retention-days: 14
