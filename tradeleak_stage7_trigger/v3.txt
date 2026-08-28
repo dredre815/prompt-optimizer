@@ -1,0 +1,1 @@
+TradeLeak Stage-7 V3 confirmatory trigger. Scientific design frozen in issue #55; execution-only correction frozen before result inspection.
